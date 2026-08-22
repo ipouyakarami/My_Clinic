@@ -1,7 +1,8 @@
 import re
+from urllib.parse import urlparse
 
 from django.core import mail
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from allauth.account.models import EmailAddress, EmailConfirmation
@@ -368,11 +369,13 @@ class PasswordResetFlowTests(TestCase):
 
         response = self.client.get(reset_match.group(0))
         self.assertEqual(response.status_code, 302)
-        from urllib.parse import urlparse
-
         set_password_path = urlparse(response["Location"]).path
         page = self.client.get(set_password_path)
         self.assertEqual(page.status_code, 200)
+        self.assertContains(page, "تعیین رمز عبور جدید")
+        self.assertContains(page, 'name="password1"')
+        self.assertNotContains(page, "لینک نامعتبر است")
+
         response = self.client.post(
             set_password_path,
             {"password1": "Brand-New-Pass-7", "password2": "Brand-New-Pass-7"},
@@ -390,6 +393,25 @@ class PasswordResetFlowTests(TestCase):
         )
         self.assertIn("_auth_user_id", self.client.session)
         self.assertContains(login, "داشبورد بیمار")
+
+    def test_set_password_page_without_session_shows_invalid_link(self):
+        self.client.post(
+            reverse("account_reset_password"),
+            {"email": "resetme@example.com"},
+        )
+        reset_match = RESET_KEY_URL_RE.search(mail.outbox[-1].body)
+        response = self.client.get(reset_match.group(0))
+        set_password_path = urlparse(response["Location"]).path
+
+        fresh_client = Client()
+        page = fresh_client.get(set_password_path)
+        self.assertContains(page, "لینک نامعتبر است", status_code=200)
+
+    def test_bogus_reset_key_shows_invalid_link(self):
+        page = self.client.get(
+            "/accounts/password/reset/key/1-totallyboguskey123456/"
+        )
+        self.assertContains(page, "لینک نامعتبر است", status_code=200)
 
 
 class LogoutTests(TestCase):
