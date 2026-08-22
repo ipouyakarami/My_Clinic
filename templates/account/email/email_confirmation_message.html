@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<body style="font-family: Tahoma, sans-serif; direction: rtl; text-align: right; background: #f8fafc; padding: 24px;">
+    <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px;">
+        <h2 style="color: #0f766e; margin: 0 0 16px;">مای‌کلینیک</h2>
+        <p>سلام{% if user.first_name %} {{ user.first_name }}{% endif %}،</p>
+        <p>برای فعال‌سازی حساب کاربری خود و تعیین رمز عبور، روی دکمه زیر کلیک کنید:</p>
+        <p style="text-align: center; margin: 28px 0;">
+            <a href="{{ activate_url }}"
+               style="background: #0d9488; color: #ffffff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                فعال‌سازی حساب
+            </a>
+        </p>
+        <p style="color: #64748b; font-size: 13px;">
+            اگر شما این درخواست را نداده‌اید، این ایمیل را نادیده بگیرید.
+        </p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+        <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+            مای‌کلینیک — رزرو نوبت مطب و پیگیری دارو
+        </p>
+    </div>
+</body>
+</html>

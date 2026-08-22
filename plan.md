@@ -16,14 +16,14 @@ Companion to `requirements.md`. Work top to bottom; each phase should be functio
 - [x] Test runner configured (`TestCase` or pytest-django) and running in CI/locally on a no-op test
 
 ## Phase 1 — Auth & User Model
-- [ ] Custom `User(AbstractBaseUser)` with `email` as `USERNAME_FIELD`, `user_type` field
-- [ ] Integrate django-allauth with the custom user model
-- [ ] `Patient` and `Doctor` profile models (OneToOne to User)
-- [ ] Patient self-registration flow + email verification (Gmail SMTP via env vars)
-- [ ] Doctor creation via Django admin custom form + verification email
-- [ ] Password reset flow
-- [ ] Login/logout, role-based redirect after login (patient → patient dashboard, doctor → doctor dashboard)
-- [ ] Test: unverified user cannot log in and gets resend-verification prompt
+- [x] Custom `User(AbstractBaseUser)` with `email` as `USERNAME_FIELD`, `user_type` field
+- [x] Integrate django-allauth with the custom user model
+- [x] `Patient` and `Doctor` profile models (OneToOne to User)
+- [x] Patient self-registration flow + email verification (Gmail SMTP via env vars)
+- [x] Doctor creation via Django admin custom form + verification email
+- [x] Password reset flow
+- [x] Login/logout, role-based redirect after login (patient → patient dashboard, doctor → doctor dashboard)
+- [x] Test: unverified user cannot log in and gets resend-verification prompt
 
 ## Phase 2 — Public Pages
 - [ ] Home/landing page (Alef.ba-style: hero, features, CTAs)

@@ -18,7 +18,20 @@
             <ul class="flex items-center gap-6 text-sm font-medium">
                 <li><a href="/" class="text-slate-600 hover:text-teal-700">خانه</a></li>
                 <li><a href="#" class="text-slate-600 hover:text-teal-700">پزشکان</a></li>
-                <li><a href="#" class="rounded-lg bg-teal-600 px-4 py-2 text-white hover:bg-teal-700">ورود</a></li>
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'accounts:dashboard' %}" class="text-slate-600 hover:text-teal-700">داشبورد</a></li>
+                    <li>
+                        <form method="post" action="{% url 'account_logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-100">
+                                خروج
+                            </button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li><a href="{% url 'account_login' %}" class="text-slate-600 hover:text-teal-700">ورود</a></li>
+                    <li><a href="{% url 'accounts:patient_signup' %}" class="rounded-lg bg-teal-600 px-4 py-2 text-white hover:bg-teal-700">ثبت‌نام</a></li>
+                {% endif %}
             </ul>
         </nav>
     </header>

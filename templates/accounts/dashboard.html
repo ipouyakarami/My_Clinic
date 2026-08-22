@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}داشبورد — مای‌کلینیک{% endblock %}
+
+{% block content %}
+    {% if user.user_type == "doctor" %}
+        <h1 class="mb-6 text-2xl font-bold text-slate-900">
+            داشبورد پزشک — دکتر {{ user.get_full_name }}
+        </h1>
+        <p class="text-slate-500">نوبت‌های امروز و آمار مطب در فاز ۶ تکمیل می‌شود.</p>
+    {% else %}
+        <h1 class="mb-6 text-2xl font-bold text-slate-900">
+            داشبورد بیمار — {{ user.get_full_name }}
+        </h1>
+        <p class="text-slate-500">نوبت‌ها و یادآوری داروها در فاز ۶ تکمیل می‌شود.</p>
+    {% endif %}
+{% endblock %}

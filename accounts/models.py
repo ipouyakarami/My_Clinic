@@ -1,5 +1,6 @@
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
+from django.conf import settings
 from django.db import models
 
 
@@ -58,3 +59,44 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.first_name or self.email
+
+
+class Patient(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="patient",
+        verbose_name="کاربر",
+    )
+    phone_number = models.CharField("شماره تماس", max_length=15, blank=True)
+
+    class Meta:
+        verbose_name = "بیمار"
+        verbose_name_plural = "بیماران"
+
+    def __str__(self):
+        return str(self.user)
+
+
+class Doctor(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="doctor",
+        verbose_name="کاربر",
+    )
+    specialty = models.CharField("تخصص", max_length=100)
+    description = models.TextField("توضیحات")
+    profile_picture = models.ImageField(
+        "تصویر پروفایل",
+        upload_to="doctor_pictures/",
+        blank=True,
+    )
+    is_verified = models.BooleanField("تایید شده", default=False)
+
+    class Meta:
+        verbose_name = "پزشک"
+        verbose_name_plural = "پزشکان"
+
+    def __str__(self):
+        return f"دکتر {self.user}"

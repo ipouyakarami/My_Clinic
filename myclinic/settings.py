@@ -40,10 +40,16 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
+    # Third-party
+    "allauth",
+    "allauth.account",
     # Local apps
     "core",
     "accounts",
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -53,6 +59,12 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+]
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
 ROOT_URLCONF = "myclinic.urls"
@@ -82,6 +94,22 @@ DATABASES = {
 
 # Custom user model (accounts.User) — must exist before first migrate
 AUTH_USER_MODEL = "accounts.User"
+
+# django-allauth — email-only accounts, mandatory verification
+ACCOUNT_ADAPTER = "accounts.adapter.AccountAdapter"
+ACCOUNT_FORMS = {"login": "accounts.forms.MyClinicLoginForm"}
+
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_CONFIRM_EMAIL_ON_GET = False
+ACCOUNT_RATE_LIMITS = {"confirm_email": None}
+
+LOGIN_REDIRECT_URL = "/dashboard/"
+ACCOUNT_LOGIN_REDIRECT_URL = "/dashboard/"
+LOGOUT_REDIRECT_URL = "/"
+ACCOUNT_LOGOUT_REDIRECT_URL = "/"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
