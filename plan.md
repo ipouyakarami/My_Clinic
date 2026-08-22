@@ -26,9 +26,9 @@ Companion to `requirements.md`. Work top to bottom; each phase should be functio
 - [x] Test: unverified user cannot log in and gets resend-verification prompt
 
 ## Phase 2 — Public Pages
-- [ ] Home/landing page (Alef.ba-style: hero, features, CTAs)
-- [ ] Doctor listing page with specialty filter, card grid (drdr.ir-style, no ratings)
-- [ ] Doctor profile page (public) showing bio + available time slots
+- [x] Home/landing page (Alef.ba-style: hero, features, CTAs)
+- [x] Doctor listing page with specialty filter, card grid (drdr.ir-style, no ratings)
+- [x] Doctor profile page (public) showing bio + available time slots
 
 ## Phase 3 — Appointments
 - [ ] `TimeSlot` model + doctor "define working hours" flow (Jalali date input → 30-min slot generation)

@@ -1,20 +1,74 @@
 {% extends "base.html" %}
 
-{% block title %}مای‌کلینیک — صفحه اصلی{% endblock %}
+{% block title %}مای‌کلینیک — نوبت پزشک و یادآوری دارو{% endblock %}
 
 {% block content %}
-    <section class="py-16 text-center">
-        <h1 class="text-4xl font-bold leading-relaxed text-slate-900">
-            نوبت پزشک و برنامه دارویی شما،<br>
-            <span class="text-teal-700">همه در یک جا</span>
-        </h1>
-        <p class="mx-auto mt-6 max-w-xl text-lg text-slate-600">
-            رزرو حضوری نوبت مطب و پیگیری منظم داروها با یادآوری ایمیلی
-        </p>
-        <div class="mt-8 flex items-center justify-center gap-4">
-            <a href="#" class="rounded-lg bg-teal-600 px-6 py-3 font-semibold text-white hover:bg-teal-700">شروع کنید</a>
-            <a href="#" class="rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-700 hover:bg-slate-100">مشاهده پزشکان</a>
+    <section class="grid items-center gap-10 py-10 md:grid-cols-2 md:py-14">
+        <div>
+            <h1 class="text-4xl font-bold leading-[1.4] text-slate-900 md:text-[2.6rem] md:leading-[1.35]">
+                نوبت پزشک و برنامه دارویی،<br>
+                <span class="text-teal-700">همه در یک جا</span>
+            </h1>
+            <p class="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
+                رزرو حضوری نوبت مطب و پیگیری منظم داروها با یادآوری ایمیلی؛ بدون تماس تلفنی و کاغذبازی.
+            </p>
+            <div class="mt-8 flex flex-wrap gap-3">
+                <a href="{% url 'core:doctor_list' %}" class="rounded-lg bg-teal-600 px-6 py-3 font-semibold text-white transition hover:bg-teal-700 active:translate-y-px">رزرو نوبت پزشک</a>
+                <a href="{% url 'accounts:patient_signup' %}" class="rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-700 transition hover:bg-slate-100 active:translate-y-px">ایجاد حساب کاربری</a>
+            </div>
         </div>
-        <p class="mt-12 text-sm text-slate-400">(صفحه کامل خانه در فاز ۲ پیاده‌سازی می‌شود)</p>
+
+        <div class="rounded-3xl bg-slate-900 p-5 sm:p-7">
+            <div class="space-y-4">
+                <div class="rounded-2xl bg-white p-4 shadow-sm">
+                    <p class="text-xs font-medium text-slate-400">نوبت بعدی</p>
+                    <div class="mt-2 flex items-center justify-between gap-3">
+                        <p class="font-bold text-slate-800">دکتر سارا محمدی</p>
+                        <span class="flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3 w-3"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/></svg>
+                            تایید شده
+                        </span>
+                    </div>
+                    <p class="mt-1 text-sm text-slate-500">متخصص داخلی · فردا، ساعت ۱۰:۳۰</p>
+                </div>
+
+                <div class="rounded-2xl bg-white p-4 shadow-sm">
+                    <p class="text-xs font-medium text-slate-400">یادآوری دارو</p>
+                    <div class="mt-2 flex items-center justify-between gap-3">
+                        <p class="font-bold text-slate-800">متفورمین ۵۰۰ میلی‌گرم</p>
+                        <p class="shrink-0 text-sm text-slate-500">ساعت ۱۴:۰۰</p>
+                    </div>
+                    <div class="mt-3 flex gap-2">
+                        <span class="rounded-lg bg-teal-600 px-4 py-2 text-xs font-semibold text-white">مصرف شد</span>
+                        <span class="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600">صرف‌نظر</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-10">
+        <h2 class="text-2xl font-bold text-slate-900 md:text-3xl">مای‌کلینیک چه کارهایی برای شما می‌کند؟</h2>
+        <div class="mt-8 grid gap-5 md:grid-cols-2">
+            <div class="flex flex-col justify-center rounded-2xl bg-teal-50 p-6 md:row-span-2 md:p-8">
+                <h3 class="text-lg font-bold text-slate-900">نوبت‌دهی حضوری آنلاین</h3>
+                <p class="mt-3 leading-relaxed text-slate-600">تقویم ۳۰ دقیقه‌ای هر پزشک را ببینید و اسلات دلخواه را رزرو کنید؛ تایید فوری بلافاصله با ایمیل برای شما ارسال می‌شود.</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-6">
+                <h3 class="text-lg font-bold text-slate-900">یادآوری هوشمند دارو</h3>
+                <p class="mt-3 leading-relaxed text-slate-600">ایمیل یادآوری هر وعده دارویی با دکمه‌های «مصرف شد» و «صرف‌نظر»، مستقیم در صندوق ورودی شما.</p>
+            </div>
+            <div class="rounded-2xl bg-slate-100 p-6">
+                <h3 class="text-lg font-bold text-slate-900">نتایج آزمایش همیشه همراه</h3>
+                <p class="mt-3 leading-relaxed text-slate-600">نتایج آزمایش‌ها را به‌صورت PDF آپلود کنید و هر جا که لازم شد در دسترس داشته باشید.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="mx-auto max-w-3xl py-12 text-center">
+        <h2 class="text-xl font-bold text-slate-900">درباره مای‌کلینیک</h2>
+        <p class="mt-4 leading-loose text-slate-600">
+            مای‌کلینیک یک سامانه ساده برای مدیریت سلامت روزمره است؛ از رزرو نوبت مطب تا یادآوری مصرف دارو و نگهداری نتایج آزمایش. همه‌چیز در یک حساب کاربری، بدون نیاز به تماس تلفنی یا مراجعه حضوری برای هماهنگی نوبت.
+        </p>
     </section>
 {% endblock %}
