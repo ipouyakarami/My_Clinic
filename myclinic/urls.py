@@ -14,6 +14,7 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("", include("core.urls")),
     path("appointments/", include("appointments.urls")),
+    path("medical-tests/", include("medical_tests.urls")),
 ]
 
 if settings.DEBUG:

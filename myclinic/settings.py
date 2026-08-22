@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "core",
     "accounts",
     "appointments",
+    "medical_tests",
 ]
 
 SITE_ID = 1

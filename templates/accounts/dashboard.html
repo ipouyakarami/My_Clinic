@@ -12,6 +12,28 @@
         <h1 class="mb-6 text-2xl font-bold text-slate-900">
             داشبورد بیمار — {{ user.get_full_name }}
         </h1>
-        <p class="text-slate-500">نوبت‌ها و یادآوری داروها در فاز ۶ تکمیل می‌شود.</p>
+
+        <div class="grid gap-6 lg:grid-cols-3 mb-8">
+            <div class="rounded-3xl border border-slate-200 bg-white p-5">
+                <p class="text-sm text-slate-500">نوبت‌های آینده</p>
+                <p class="text-3xl font-bold text-teal-700">۰</p>
+            </div>
+            <div class="rounded-3xl border border-slate-200 bg-white p-5">
+                <p class="text-sm text-slate-500">داروهای فعال</p>
+                <p class="text-3xl font-bold text-teal-700">۰</p>
+            </div>
+            <div class="rounded-3xl border border-slate-200 bg-white p-5">
+                <p class="text-sm text-slate-500">آزمایش‌ها</p>
+                <p class="text-3xl font-bold text-teal-700">۰</p>
+            </div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
+            <h2 class="mb-4 text-lg font-bold text-slate-900">آزمایش‌های اخیر</h2>
+            <p class="text-slate-500">هنوز آزمایشی آپلود نکرده‌اید.</p>
+            <a href="{% url 'medical_tests:medical_test_add' %}" class="mt-4 inline-block rounded-lg bg-teal-600 px-5 py-2.5 text-white hover:bg-teal-700">
+                آپلود آزمایش
+            </a>
+        </div>
     {% endif %}
 {% endblock %}

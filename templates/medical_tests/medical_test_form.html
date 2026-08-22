@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}آپلود نتیجه آزمایش — مای‌کلینیک{% endblock %}
+
+{% block content %}
+    <div class="mx-auto max-w-2xl">
+        <h1 class="mb-6 text-2xl font-bold text-slate-900">آپلود نتیجه آزمایش</h1>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% for field in form %}
+                    <div class="mb-4">
+                        <label class="mb-1 block text-sm font-medium text-slate-700">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ field.errors|striptags }}</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <div class="flex gap-3">
+                    <button type="submit" class="rounded-lg bg-teal-600 px-5 py-2.5 text-white hover:bg-teal-700">
+                        آپلود
+                    </button>
+                    <a href="{% url 'medical_tests:medical_test_list' %}" class="rounded-lg border border-slate-300 px-5 py-2.5 text-slate-700 hover:bg-slate-50">
+                        انصراف
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

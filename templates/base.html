@@ -26,6 +26,7 @@
                         <li><a href="{% url 'appointments:doctor_appointment_list' %}" class="text-slate-600 hover:text-teal-700">همه نوبت‌ها</a></li>
                     {% else %}
                         <li><a href="{% url 'appointments:patient_appointment_list' %}" class="text-slate-600 hover:text-teal-700">نوبت‌های من</a></li>
+                        <li><a href="{% url 'medical_tests:medical_test_list' %}" class="text-slate-600 hover:text-teal-700">آزمایش‌های من</a></li>
                     {% endif %}
                     <li>
                         <form method="post" action="{% url 'account_logout' %}">

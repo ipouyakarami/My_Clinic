@@ -1,0 +1,95 @@
+import io
+
+from django.core.exceptions import ValidationError
+from django.test import TestCase
+from django.urls import reverse
+
+from accounts.models import User
+from accounts.services import create_patient_with_profile
+from medical_tests.forms import validate_pdf_file
+from medical_tests.models import MedicalTestResult
+
+
+STRONG_PASSWORD = "Correct-Horse-9x"
+
+
+class MedicalTestCase(TestCase):
+    def _create_patient(self, email="pat@example.com"):
+        user = create_patient_with_profile(
+            {
+                "email": email,
+                "first_name": "مریم",
+                "last_name": "صادقی",
+                "password1": STRONG_PASSWORD,
+                "password2": STRONG_PASSWORD,
+            }
+        )
+        user.is_active = True
+        user.save()
+        return user
+
+    def _login(self, user):
+        self.client.force_login(user)
+
+
+class UploadValidationTests(MedicalTestCase):
+    def test_oversized_file_rejected(self):
+        user = self._create_patient()
+        self._login(user)
+        with io.BytesIO(b"%PDF-1.4 fake pdf content" * 200000) as f:
+            from django.core.files.uploadedfile import InMemoryUploadedFile
+            uploaded = InMemoryUploadedFile(
+                f, None, "big.pdf", "application/pdf", 6 * 1024 * 1024, None
+            )
+            with self.assertRaisesMessage(ValidationError, "حجم فایل نباید بیشتر از ۵ مگابایت باشد"):
+                validate_pdf_file(uploaded)
+
+    def test_non_pdf_disguised_as_pdf_rejected(self):
+        user = self._create_patient(email="pat2@example.com")
+        self._login(user)
+        with io.BytesIO(b"This is not a PDF file content") as f:
+            from django.core.files.uploadedfile import InMemoryUploadedFile
+            uploaded = InMemoryUploadedFile(
+                f, None, "fake.pdf", "application/pdf", f.tell(), None
+            )
+            with self.assertRaisesMessage(ValidationError, "باید از نوع PDF باشد"):
+                validate_pdf_file(uploaded)
+
+    def test_valid_pdf_accepted(self):
+        user = self._create_patient(email="pat3@example.com")
+        self._login(user)
+        with io.BytesIO(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n") as f:
+            from django.core.files.uploadedfile import InMemoryUploadedFile
+            uploaded = InMemoryUploadedFile(
+                f, None, "valid.pdf", "application/pdf", f.tell(), None
+            )
+            result = validate_pdf_file(uploaded)
+            self.assertIsNone(result)
+
+
+class OwnershipTests(MedicalTestCase):
+    def test_patient_can_only_see_own_results(self):
+        user1 = self._create_patient(email="pat1@example.com")
+        user2 = self._create_patient(email="pat2@example.com")
+        self._login(user1)
+        MedicalTestResult.objects.create(patient=user2, category="خون", pdf_file=None)
+        response = self.client.get(reverse("medical_tests:medical_test_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "خون")
+
+    def test_download_enforces_ownership(self):
+        user1 = self._create_patient(email="pat3@example.com")
+        user2 = self._create_patient(email="pat4@example.com")
+        test_obj = MedicalTestResult.objects.create(patient=user2, category="خون", pdf_file=None)
+        self._login(user1)
+        response = self.client.get(reverse("medical_tests:medical_test_download", args=[test_obj.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_enforces_ownership(self):
+        user1 = self._create_patient(email="pat5@example.com")
+        user2 = self._create_patient(email="pat6@example.com")
+        test_obj = MedicalTestResult.objects.create(patient=user2, category="خون", pdf_file=None)
+        self._login(user1)
+        response = self.client.post(reverse("medical_tests:medical_test_delete", args=[test_obj.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(MedicalTestResult.objects.filter(pk=test_obj.pk).exists())

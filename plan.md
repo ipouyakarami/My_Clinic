@@ -51,9 +51,9 @@ Companion to `requirements.md`. Work top to bottom; each phase should be functio
 - [ ] Test: schedule generation correctness for each of the 4 frequency types
 
 ## Phase 5 — Medical Test Results
-- [ ] `MedicalTestResult` model, upload form (PDF only via content-type/magic-byte check, not just extension; 5MB max, local filesystem storage)
-- [ ] List, download, delete views (patient-owned only, enforce ownership check)
-- [ ] Test: oversized file rejected, non-PDF disguised as `.pdf` rejected
+- [x] `MedicalTestResult` model, upload form (PDF only via content-type/magic-byte check, not just extension; 5MB max, local filesystem storage)
+- [x] List, download, delete views (patient-owned only, enforce ownership check)
+- [x] Test: oversized file rejected, non-PDF disguised as `.pdf` rejected
 
 ## Phase 6 — Dashboards
 - [ ] Patient dashboard: upcoming appointments + today's medications + quick actions
