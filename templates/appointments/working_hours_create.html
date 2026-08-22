@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}تعیین ساعات کاری — مای‌کلینیک{% endblock %}
+
+{% block content %}
+    <div class="mx-auto max-w-2xl space-y-6">
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
+            <h1 class="mb-6 text-2xl font-bold text-slate-900">تعیین ساعات کاری</h1>
+
+            <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% for field in form %}
+                    <div class="mb-4">
+                        <label class="mb-1 block text-sm font-medium text-slate-700">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ field.errors|striptags }}</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="rounded-lg bg-teal-600 px-5 py-2.5 text-white hover:bg-teal-700">
+                    ایجاد نوبت‌ها
+                </button>
+            </form>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
+            <h2 class="mb-4 text-lg font-bold text-slate-900">جستجو بر اساس تاریخ</h2>
+            <form method="get" class="flex flex-wrap items-end gap-3">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">تاریخ</label>
+                    <select name="date" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" onchange="this.form.submit()">
+                        <option value="">همه تاریخ‌های آینده</option>
+                        {% for d in available_dates %}
+                            <option value="{{ d.gregorian|date:'Y-m-d' }}" {% if selected_date == d.gregorian|date:'Y-m-d' %}selected{% endif %}>
+                                {{ d.jalali }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if selected_date %}
+                    <a href="." class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        پاک کردن
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+
+        {% if upcoming_slots %}
+            <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
+                <h2 class="mb-4 text-lg font-bold text-slate-900">
+                    {% if selected_date %}نوبت‌های {{ selected_date }}{% else %}نوبت‌های آینده{% endif %}
+                </h2>
+                <div class="space-y-3">
+                    {% for slot in upcoming_slots %}
+                        <div class="flex items-center justify-between rounded-xl border border-slate-100 p-4">
+                            <div>
+                                <p class="font-bold text-slate-900">{{ slot.jalali_date }}</p>
+                                <p class="text-sm text-slate-500">{{ slot.start_time|time:"H:i" }} تا {{ slot.end_time|time:"H:i" }}</p>
+                                {% if slot.is_booked %}
+                                    <span class="mt-1 inline-block rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700">رزرو شده</span>
+                                {% endif %}
+                            </div>
+                            {% if not slot.is_booked %}
+                                <form method="post" action="{% url 'appointments:time_slot_delete' slot.pk %}" onsubmit="return confirm('آیا مطمئن هستید؟')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-100">
+                                        حذف
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

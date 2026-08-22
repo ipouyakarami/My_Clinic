@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}جزئیات ویزیت — مای‌کلینیک{% endblock %}
+
+{% block content %}
+    <div class="mx-auto max-w-3xl">
+        <h1 class="mb-6 text-2xl font-bold text-slate-900">جزئیات ویزیت</h1>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <p class="text-sm text-slate-500">بیمار</p>
+                    <p class="font-bold text-slate-900">{{ appointment.patient.user.get_full_name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">پزشک</p>
+                    <p class="font-bold text-slate-900">دکتر {{ appointment.time_slot.doctor.user.get_full_name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">تاریخ</p>
+                    <p class="font-bold text-slate-900">{{ appointment.time_slot.jalali_date }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">ساعت</p>
+                    <p class="font-bold text-slate-900">{{ appointment.time_slot.start_time|time:"H:i" }} تا {{ appointment.time_slot.end_time|time:"H:i" }}</p>
+                </div>
+            </div>
+
+            <div class="mt-6 border-t border-slate-100 pt-6">
+                <p class="mb-2 text-sm text-slate-500">وضعیت</p>
+                <span class="inline-block rounded-full px-3 py-1 text-xs font-medium
+                    {% if appointment.status == 'active' %}bg-teal-50 text-teal-700{% endif %}
+                    {% if appointment.status == 'completed' %}bg-emerald-50 text-emerald-700{% endif %}
+                    {% if appointment.status == 'cancelled' %}bg-red-50 text-red-700{% endif %}
+                ">
+                    {{ appointment.get_status_display }}
+                </span>
+            </div>
+
+            {% if appointment.doctor_summary %}
+                <div class="mt-6 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
+                    <strong>خلاصه ویزیت:</strong>
+                    <p class="mt-1">{{ appointment.doctor_summary }}</p>
+                </div>
+            {% endif %}
+
+            {% if request.user.user_type == 'doctor' %}
+                <div class="mt-8 border-t border-slate-100 pt-6">
+                    <h2 class="mb-4 text-lg font-bold text-slate-900">ثبت خلاصه ویزیت</h2>
+                    <form method="post">
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}
+                            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% for field in form %}
+                            <div class="mb-4">
+                                <label class="mb-1 block text-sm font-medium text-slate-700">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <p class="mt-1 text-xs text-red-600">{{ field.errors|striptags }}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <button type="submit" class="rounded-lg bg-teal-600 px-5 py-2.5 text-white hover:bg-teal-700">
+                            ذخیره و اتمام ویزیت
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

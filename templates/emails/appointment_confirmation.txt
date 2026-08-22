@@ -1,0 +1,11 @@
+مای‌کلینیک — تایید رزرو نوبت
+
+نوبت شما با موفقیت رزرو شد.
+
+پزشک: دکتر {{ slot.doctor.user.get_full_name }}
+تاریخ: {{ slot.date|date:"Y/m/d" }}
+ساعت: {{ slot.start_time|time:"H:i" }} تا {{ slot.end_time|time:"H:i" }}
+تخصص: {{ slot.doctor.specialty }}
+
+برای مشاهده جزئیات به مای‌کلینیک مراجعه کنید:
+http://{{ request.get_host }}{% url 'appointments:patient_appointment_list' %}

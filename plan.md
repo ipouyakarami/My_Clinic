@@ -31,13 +31,13 @@ Companion to `requirements.md`. Work top to bottom; each phase should be functio
 - [x] Doctor profile page (public) showing bio + available time slots
 
 ## Phase 3 — Appointments
-- [ ] `TimeSlot` model + doctor "define working hours" flow (Jalali date input → 30-min slot generation)
-- [ ] Slot generation dedupes against existing slots for that date; trailing-minute remainder handled per requirements.md §8
-- [ ] Doctor: delete a time slot (blocked if booked) — **test per requirements.md §8**
-- [ ] Patient: book a slot from doctor profile page, using `select_for_update()` transaction — **test the race condition per requirements.md §8**
-- [ ] Instant confirmation on booking (on-screen + email)
-- [ ] Patient: view/cancel appointments, 12-hour window enforced — **test per requirements.md §8**
-- [ ] Doctor: view today's / all appointments, add visit summary notes (visible to patient once completed)
+- [x] `TimeSlot` model + doctor "define working hours" flow (Jalali date input → 30-min slot generation)
+- [x] Slot generation dedupes against existing slots for that date; trailing-minute remainder handled per requirements.md §8
+- [x] Doctor: delete a time slot (blocked if booked) — **test per requirements.md §8**
+- [x] Patient: book a slot from doctor profile page, using `select_for_update()` transaction — **test the race condition per requirements.md §8**
+- [x] Instant confirmation on booking (on-screen + email)
+- [x] Patient: view/cancel appointments, 12-hour window enforced — **test per requirements.md §8**
+- [x] Doctor: view today's / all appointments, add visit summary notes (visible to patient once completed)
 
 ## Phase 4 — Medications & Reminders
 - [ ] `Medication` + `MedicationSchedule` models and CRUD UI

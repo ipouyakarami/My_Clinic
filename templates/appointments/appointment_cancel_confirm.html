@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}لغو نوبت — مای‌کلینیک{% endblock %}
+
+{% block content %}
+    <div class="mx-auto max-w-2xl">
+        <h1 class="mb-6 text-2xl font-bold text-slate-900">لغو نوبت</h1>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
+            <p class="mb-4 text-slate-700">آیا مطمئن هستید که می‌خواهید این نوبت را لغو کنید؟</p>
+            <div class="mb-6 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+                <p><strong>پزشک:</strong> دکتر {{ appointment.time_slot.doctor.user.get_full_name }}</p>
+                <p><strong>تاریخ:</strong> {{ appointment.time_slot.jalali_date }}</p>
+                <p><strong>ساعت:</strong> {{ appointment.time_slot.start_time|time:"H:i" }} تا {{ appointment.time_slot.end_time|time:"H:i" }}</p>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="flex flex-wrap gap-3">
+                    <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-red-50 px-5 py-2.5 text-sm font-medium text-red-700 shadow-sm ring-1 ring-red-200">
+                        لغو نوبت
+                    </button>
+                    <a href="{% url 'appointments:patient_appointment_list' %}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                        انصراف
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

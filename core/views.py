@@ -1,6 +1,9 @@
+from django.utils import timezone
 from django.views.generic import DetailView, ListView, TemplateView
 
 from accounts.models import Doctor
+
+from appointments.models import TimeSlot
 
 
 class HomeView(TemplateView):
@@ -40,3 +43,12 @@ class DoctorDetailView(DetailView):
 
     def get_queryset(self):
         return Doctor.objects.filter(user__is_active=True).select_related("user")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["available_slots"] = (
+            TimeSlot.objects.filter(doctor=self.object, is_booked=False, date__gte=timezone.now().date())
+            .order_by("date", "start_time")
+            .select_related("doctor", "doctor__user")
+        )
+        return context
