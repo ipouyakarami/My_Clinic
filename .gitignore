@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+media/
+staticfiles/
+tools/tailwindcss*
+db.sqlite3
+celerybeat-schedule*
+.DS_Store

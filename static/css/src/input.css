@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@source "../../../templates/";
+@source "../../../accounts/templates/";
+@source "../../../appointments/templates/";
+@source "../../../medications/templates/";
+
+@theme {
+    --font-sans: "Vazirmatn", "Tahoma", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+    html {
+        direction: rtl;
+    }
+}
