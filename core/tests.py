@@ -76,6 +76,22 @@ class PublicPagesTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "نوبت پزشک")
 
+    def test_home_page_shows_hero_with_clinic_name(self):
+        response = self.client.get(reverse("core:home"))
+        self.assertContains(response, "مای‌کلینیک")
+        self.assertContains(response, "heroimage.jpg")
+
+    def test_home_page_shows_doctor_carousel_section(self):
+        response = self.client.get(reverse("core:home"))
+        self.assertContains(response, "با یک دکمه نوبت بگیر")
+        self.assertContains(response, "دکتر سارا محمدی")
+        self.assertContains(response, "متخصص داخلی")
+
+    def test_home_page_shows_footer_with_info(self):
+        response = self.client.get(reverse("core:home"))
+        self.assertContains(response, "حریم خصوصی")
+        self.assertContains(response, "شرایط استفاده")
+
     def test_nav_links_to_doctor_list(self):
         response = self.client.get(reverse("core:home"))
         self.assertContains(response, 'href="/doctors/"')
