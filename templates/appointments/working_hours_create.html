@@ -25,7 +25,7 @@
                         {% endif %}
                     </div>
                 {% endfor %}
-                <button type="submit" class="rounded-lg bg-teal-600 px-5 py-2.5 text-white hover:bg-teal-700">
+                <button type="submit" class="rounded-lg bg-primary px-5 py-2.5 text-white hover:bg-primary/90">
                     ایجاد نوبت‌ها
                 </button>
             </form>
@@ -65,7 +65,7 @@
                                 <p class="font-bold text-slate-900">{{ slot.jalali_date }}</p>
                                 <p class="text-sm text-slate-500">{{ slot.start_time|time:"H:i" }} تا {{ slot.end_time|time:"H:i" }}</p>
                                 {% if slot.is_booked %}
-                                    <span class="mt-1 inline-block rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700">رزرو شده</span>
+                                    <span class="mt-1 inline-block rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-primary">رزرو شده</span>
                                 {% endif %}
                             </div>
                             {% if not slot.is_booked %}

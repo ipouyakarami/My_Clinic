@@ -7,6 +7,8 @@
 
 @theme {
     --font-sans: "Vazirmatn", "Tahoma", ui-sans-serif, system-ui, sans-serif;
+    --color-primary: #4e598c;
+    --color-accent: #f9c784;
 }
 
 @layer base {

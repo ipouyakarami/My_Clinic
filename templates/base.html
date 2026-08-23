@@ -14,19 +14,19 @@
 
     <header class="border-b border-slate-200 bg-white">
         <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-            <a href="/" class="text-xl font-bold text-teal-700">مای‌کلینیک</a>
+            <li><a href="/" class="text-xl font-bold text-primary">مای‌کلینیک</a></li>
             <ul class="flex items-center gap-6 text-sm font-medium">
-                <li><a href="/" class="text-slate-600 hover:text-teal-700">خانه</a></li>
-                <li><a href="{% url 'core:doctor_list' %}" class="text-slate-600 hover:text-teal-700">پزشکان</a></li>
+                <li><a href="/" class="text-slate-600 hover:text-primary">خانه</a></li>
+                <li><a href="{% url 'core:doctor_list' %}" class="text-slate-600 hover:text-primary">پزشکان</a></li>
                 {% if user.is_authenticated %}
-                    <li><a href="{% url 'accounts:dashboard' %}" class="text-slate-600 hover:text-teal-700">داشبورد</a></li>
+                    <li><a href="{% url 'accounts:dashboard' %}" class="text-slate-600 hover:text-primary">داشبورد</a></li>
                     {% if user.user_type == 'doctor' %}
-                        <li><a href="{% url 'appointments:working_hours_create' %}" class="text-slate-600 hover:text-teal-700">ساعات کاری</a></li>
-                        <li><a href="{% url 'appointments:doctor_today_appointments' %}" class="text-slate-600 hover:text-teal-700">نوبت‌های امروز</a></li>
-                        <li><a href="{% url 'appointments:doctor_appointment_list' %}" class="text-slate-600 hover:text-teal-700">همه نوبت‌ها</a></li>
+                        <li><a href="{% url 'appointments:working_hours_create' %}" class="text-slate-600 hover:text-primary">ساعات کاری</a></li>
+                        <li><a href="{% url 'appointments:doctor_today_appointments' %}" class="text-slate-600 hover:text-primary">نوبت‌های امروع</a></li>
+                        <li><a href="{% url 'appointments:doctor_appointment_list' %}" class="text-slate-600 hover:text-primary">همه نوبت‌ها</a></li>
                     {% else %}
-                        <li><a href="{% url 'appointments:patient_appointment_list' %}" class="text-slate-600 hover:text-teal-700">نوبت‌های من</a></li>
-                        <li><a href="{% url 'medical_tests:medical_test_list' %}" class="text-slate-600 hover:text-teal-700">آزمایش‌های من</a></li>
+                        <li><a href="{% url 'appointments:patient_appointment_list' %}" class="text-slate-600 hover:text-primary">نوبت‌های من</a></li>
+                        <li><a href="{% url 'medical_tests:medical_test_list' %}" class="text-slate-600 hover:text-primary">آزمایش‌های من</a></li>
                     {% endif %}
                     <li>
                         <form method="post" action="{% url 'account_logout' %}">
@@ -37,8 +37,8 @@
                         </form>
                     </li>
                 {% else %}
-                    <li><a href="{% url 'account_login' %}" class="text-slate-600 hover:text-teal-700">ورود</a></li>
-                    <li><a href="{% url 'accounts:patient_signup' %}" class="rounded-lg bg-teal-600 px-4 py-2 text-white hover:bg-teal-700">ثبت‌نام</a></li>
+                    <li><a href="{% url 'account_login' %}" class="text-slate-600 hover:text-primary">ورود</a></li>
+                    <li><a href="{% url 'accounts:patient_signup' %}" class="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary/90">ثبت‌نام</a></li>
                 {% endif %}
             </ul>
         </nav>

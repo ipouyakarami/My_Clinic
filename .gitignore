@@ -8,3 +8,5 @@ tools/tailwindcss*
 db.sqlite3
 celerybeat-schedule*
 .DS_Store
+node_modules/
+package-lock.json

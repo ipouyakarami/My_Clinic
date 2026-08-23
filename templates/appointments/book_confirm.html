@@ -18,7 +18,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="slot" value="{{ slot.pk }}">
                 <div class="flex gap-3">
-                    <button type="submit" class="rounded-lg bg-teal-600 px-5 py-2.5 text-white hover:bg-teal-700">تایید و رزرو</button>
+                    <button type="submit" class="rounded-lg bg-primary px-5 py-2.5 text-white hover:bg-primary/90">تایید و رزرو</button>
                     <a href="{% url 'core:doctor_detail' pk=slot.doctor.pk %}" class="rounded-lg border border-slate-300 px-5 py-2.5 text-slate-700 hover:bg-slate-50">انصراف</a>
                 </div>
             </form>
