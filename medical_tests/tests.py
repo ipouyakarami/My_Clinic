@@ -6,7 +6,7 @@ from django.urls import reverse
 
 from accounts.models import User
 from accounts.services import create_patient_with_profile
-from medical_tests.forms import validate_pdf_file
+from medical_tests.forms import MedicalTestResultForm, validate_pdf_file
 from medical_tests.models import MedicalTestResult
 
 
@@ -72,7 +72,7 @@ class OwnershipTests(MedicalTestCase):
         user1 = self._create_patient(email="pat1@example.com")
         user2 = self._create_patient(email="pat2@example.com")
         self._login(user1)
-        MedicalTestResult.objects.create(patient=user2, category="خون", pdf_file=None)
+        MedicalTestResult.objects.create(patient=user2, category="blood", pdf_file=None)
         response = self.client.get(reverse("medical_tests:medical_test_list"))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "خون")
@@ -80,7 +80,7 @@ class OwnershipTests(MedicalTestCase):
     def test_download_enforces_ownership(self):
         user1 = self._create_patient(email="pat3@example.com")
         user2 = self._create_patient(email="pat4@example.com")
-        test_obj = MedicalTestResult.objects.create(patient=user2, category="خون", pdf_file=None)
+        test_obj = MedicalTestResult.objects.create(patient=user2, category="blood", pdf_file=None)
         self._login(user1)
         response = self.client.get(reverse("medical_tests:medical_test_download", args=[test_obj.pk]))
         self.assertEqual(response.status_code, 404)
@@ -88,8 +88,51 @@ class OwnershipTests(MedicalTestCase):
     def test_delete_enforces_ownership(self):
         user1 = self._create_patient(email="pat5@example.com")
         user2 = self._create_patient(email="pat6@example.com")
-        test_obj = MedicalTestResult.objects.create(patient=user2, category="خون", pdf_file=None)
+        test_obj = MedicalTestResult.objects.create(patient=user2, category="blood", pdf_file=None)
         self._login(user1)
         response = self.client.post(reverse("medical_tests:medical_test_delete", args=[test_obj.pk]))
         self.assertEqual(response.status_code, 404)
         self.assertTrue(MedicalTestResult.objects.filter(pk=test_obj.pk).exists())
+
+
+class CategoryDropdownTests(MedicalTestCase):
+    def test_upload_form_uses_select_for_category(self):
+        form = MedicalTestResultForm()
+        self.assertEqual(form.fields["category"].widget.input_type, "select")
+
+    def test_upload_page_renders_category_dropdown_options(self):
+        user = self._create_patient(email="form@example.com")
+        self._login(user)
+        response = self.client.get(reverse("medical_tests:medical_test_add"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "<select")
+        self.assertContains(response, "آزمایش خون")
+        self.assertContains(response, "آزمایش ویتامین‌ها و مواد معدنی")
+
+    def test_invalid_category_rejected_by_validation(self):
+        user = self._create_patient(email="invalid@example.com")
+        test = MedicalTestResult(patient=user, category="not-a-real-category", pdf_file=None)
+        with self.assertRaises(ValidationError):
+            test.full_clean()
+
+
+class NameFieldTests(MedicalTestCase):
+    def test_upload_with_name_shows_in_list(self):
+        user = self._create_patient(email="name1@example.com")
+        self._login(user)
+        MedicalTestResult.objects.create(
+            patient=user, category="blood", name="CBC", pdf_file=None
+        )
+        response = self.client.get(reverse("medical_tests:medical_test_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "CBC")
+
+    def test_upload_without_name_shows_category_in_list(self):
+        user = self._create_patient(email="name2@example.com")
+        self._login(user)
+        MedicalTestResult.objects.create(
+            patient=user, category="blood", name="", pdf_file=None
+        )
+        response = self.client.get(reverse("medical_tests:medical_test_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "آزمایش خون")

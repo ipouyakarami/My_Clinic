@@ -12,6 +12,8 @@ from django.views.generic import CreateView, DetailView, FormView, ListView, Vie
 
 from accounts.models import Doctor, Patient, User
 
+from medical_tests.models import MedicalTestResult
+
 from .forms import JalaliDateField, VisitSummaryForm, WorkingHoursForm
 from .models import Appointment, TimeSlot
 
@@ -322,4 +324,13 @@ class DoctorAppointmentDetailView(DoctorRequiredMixin, DetailView):
         context["form"] = VisitSummaryForm(
             initial={"doctor_summary": self.object.doctor_summary}
         )
+        context["test_categories"] = MedicalTestResult.TestCategory.choices
+        selected_test_type = self.request.GET.get("test_type", "")
+        context["selected_test_type"] = selected_test_type
+        patient_tests = MedicalTestResult.objects.filter(
+            patient=self.object.patient.user
+        )
+        if selected_test_type:
+            patient_tests = patient_tests.filter(category=selected_test_type)
+        context["patient_tests"] = patient_tests.order_by("-uploaded_at")
         return context

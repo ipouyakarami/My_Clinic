@@ -40,12 +40,15 @@ def validate_pdf_file(value):
 class MedicalTestResultForm(forms.ModelForm):
     class Meta:
         model = MedicalTestResult
-        fields = ["category", "pdf_file"]
+        fields = ["category", "name", "pdf_file"]
         labels = {
-            "category": "دسته‌بندی",
+            "category": "نوع آزمایش",
+            "name": "نام آزمایش",
             "pdf_file": "فایل PDF",
         }
         widgets = {
+            "category": forms.Select(attrs={"class": "mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2"}),
+            "name": forms.TextInput(attrs={"class": "mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2", "placeholder": "مثال: CBC، تیروئید ترکیبی"}),
             "pdf_file": forms.FileInput(attrs={"accept": ".pdf"}),
         }
 

@@ -1,13 +1,16 @@
 import datetime
+import tempfile
 from unittest.mock import patch
 
 from django.core import mail
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import Doctor, Patient, User
 from appointments.models import Appointment, TimeSlot
+from medical_tests.models import MedicalTestResult
 
 
 STRONG_PASSWORD = "Correct-Horse-9x"
@@ -302,3 +305,126 @@ class BookingConfirmationEmailTests(AppointmentTestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("تایید", mail.outbox[0].subject)
         self.assertIn(pat_user.email, mail.outbox[0].to)
+
+
+class DoctorMedicalTestAccessTests(AppointmentTestCase):
+    def setUp(self):
+        self.doc_user, self.doctor = self._create_doctor()
+        self.pat_user, self.patient = self._create_patient()
+        self.slot = self._create_slot(self.doctor)
+        self.appointment = Appointment.objects.create(
+            patient=self.patient, time_slot=self.slot
+        )
+
+    def test_doctor_sees_patient_medical_tests_in_appointment_detail(self):
+        test_result = MedicalTestResult.objects.create(
+            patient=self.pat_user, category="blood", name="CBC", pdf_file=None
+        )
+        self._login(self.doc_user)
+        response = self.client.get(
+            reverse("appointments:appointment_detail", args=[self.appointment.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "CBC")
+        self.assertContains(response, "نتایج آزمایش بیمار")
+        self.assertContains(
+            response,
+            reverse("medical_tests:medical_test_download_doctor", args=[test_result.pk]),
+        )
+
+    def test_doctor_sees_empty_state_when_no_tests(self):
+        self._login(self.doc_user)
+        response = self.client.get(
+            reverse("appointments:appointment_detail", args=[self.appointment.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "بیمار هنوز نتیجه آزمایشی بارگذاری نکرده است")
+
+    def test_doctor_filters_patient_medical_tests_by_type(self):
+        blood_test = MedicalTestResult.objects.create(
+            patient=self.pat_user, category="blood", pdf_file=None
+        )
+        urine_test = MedicalTestResult.objects.create(
+            patient=self.pat_user, category="urine", pdf_file=None
+        )
+        self._login(self.doc_user)
+        response = self.client.get(
+            reverse("appointments:appointment_detail", args=[self.appointment.pk])
+            + "?test_type=blood"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "آزمایش خون")
+        self.assertContains(
+            response,
+            reverse("medical_tests:medical_test_download_doctor", args=[blood_test.pk]),
+        )
+        self.assertNotContains(
+            response,
+            reverse("medical_tests:medical_test_download_doctor", args=[urine_test.pk]),
+        )
+
+    def test_doctor_filter_shows_all_when_no_type_selected(self):
+        MedicalTestResult.objects.create(
+            patient=self.pat_user, category="blood", pdf_file=None
+        )
+        MedicalTestResult.objects.create(
+            patient=self.pat_user, category="urine", pdf_file=None
+        )
+        self._login(self.doc_user)
+        response = self.client.get(
+            reverse("appointments:appointment_detail", args=[self.appointment.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "آزمایش خون")
+        self.assertContains(response, "آزمایش ادرار")
+
+    @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+    def test_doctor_can_download_patient_medical_test(self):
+        test_result = MedicalTestResult.objects.create(
+            patient=self.pat_user,
+            category="blood",
+            pdf_file=SimpleUploadedFile(
+                "result.pdf", b"%PDF-1.4\n%test content", content_type="application/pdf"
+            ),
+        )
+        self._login(self.doc_user)
+        response = self.client.get(
+            reverse("medical_tests:medical_test_download_doctor", args=[test_result.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+
+    @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+    def test_doctor_cannot_download_other_patient_medical_test(self):
+        other_user, _ = self._create_patient(email="other@example.com")
+        test_result = MedicalTestResult.objects.create(
+            patient=other_user,
+            category="urine",
+            pdf_file=SimpleUploadedFile(
+                "other.pdf", b"%PDF-1.4\n%other", content_type="application/pdf"
+            ),
+        )
+        self._login(self.doc_user)
+        response = self.client.get(
+            reverse("medical_tests:medical_test_download_doctor", args=[test_result.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_patient_cannot_access_doctor_download_view(self):
+        test_result = MedicalTestResult.objects.create(
+            patient=self.pat_user, category="blood", pdf_file=None
+        )
+        self._login(self.pat_user)
+        response = self.client.get(
+            reverse("medical_tests:medical_test_download_doctor", args=[test_result.pk])
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_unauthenticated_user_redirected_from_doctor_download_view(self):
+        test_result = MedicalTestResult.objects.create(
+            patient=self.pat_user, category="blood", pdf_file=None
+        )
+        response = self.client.get(
+            reverse("medical_tests:medical_test_download_doctor", args=[test_result.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response["Location"])

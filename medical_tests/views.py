@@ -2,6 +2,7 @@ import os
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -16,6 +17,11 @@ from .models import MedicalTestResult
 class PatientRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_authenticated and self.request.user.user_type == User.UserType.PATIENT
+
+
+class DoctorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.user_type == User.UserType.DOCTOR
 
 
 class MedicalTestListView(PatientRequiredMixin, ListView):
@@ -56,5 +62,22 @@ class MedicalTestDeleteView(PatientRequiredMixin, DeleteView):
 class MedicalTestDownloadView(PatientRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         obj = get_object_or_404(MedicalTestResult, pk=kwargs["pk"], patient=request.user)
+        if not obj.pdf_file:
+            raise Http404
         response = redirect(obj.pdf_file.url)
         return response
+
+
+class MedicalTestDoctorDownloadView(DoctorRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        from appointments.models import Appointment
+
+        test = get_object_or_404(MedicalTestResult, pk=kwargs["pk"])
+        if not Appointment.objects.filter(
+            time_slot__doctor=request.user.doctor,
+            patient=test.patient.patient,
+        ).exists():
+            raise Http404
+        if not test.pdf_file:
+            raise Http404
+        return redirect(test.pdf_file.url)
