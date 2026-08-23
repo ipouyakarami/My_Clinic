@@ -9,6 +9,15 @@ from appointments.models import TimeSlot
 class HomeView(TemplateView):
     template_name = "home.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["featured_doctors"] = (
+            Doctor.objects.filter(user__is_active=True, is_verified=True)
+            .select_related("user")
+            .order_by("user__last_name", "user__first_name")[:6]
+        )
+        return context
+
 
 class DoctorListView(ListView):
     template_name = "doctors/doctor_list.html"
