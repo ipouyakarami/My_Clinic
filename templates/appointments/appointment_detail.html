@@ -90,6 +90,16 @@
                 </div>
 
                 <div class="mt-8 border-t border-slate-100 pt-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-black">Patient Medications</h2>
+                        <a href="{% url 'medications:doctor_medication_list' appointment.pk %}" class="rounded-lg bg-primary px-4 py-2 text-sm text-white hover:bg-primary/90">
+                            Manage Medications
+                        </a>
+                    </div>
+                    <p class="text-sm text-slate-500">Add, edit, or remove medications for this patient.</p>
+                </div>
+
+                <div class="mt-8 border-t border-slate-100 pt-6">
                     <h2 class="mb-4 text-lg font-bold text-black">Record Visit Summary</h2>
                     <form method="post">
                         {% csrf_token %}

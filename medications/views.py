@@ -34,6 +34,12 @@ class PatientRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_authenticated and self.request.user.user_type == User.UserType.PATIENT
 
+    def handle_no_permission(self):
+        if self.request.user.is_authenticated and self.request.user.user_type == User.UserType.DOCTOR:
+            messages.info(self.request, "Doctors can manage patient medications from the appointment details page.")
+            return redirect("appointments:doctor_appointment_list")
+        return super().handle_no_permission()
+
 
 class DoctorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
@@ -146,7 +152,7 @@ class MedicationListView(PatientRequiredMixin, ListView):
         ).prefetch_related("schedules")
 
 
-class MedicationWizardView(View):
+class MedicationWizardView(PatientRequiredMixin, View):
     def _get_patient(self, user):
         return get_object_or_404(Patient, user=user)
 
@@ -390,6 +396,12 @@ class MedicationWizardView(View):
             }
         return {}
 
+    def _next_step_url(self, next_step):
+        return f"{reverse('medications:medication_add')}?step={next_step}"
+
+    def _list_url(self):
+        return reverse("medications:medication_list")
+
     def post(self, request, pk=None):
         step = int(request.POST.get("step", 1))
         session_data = self._get_session_data()
@@ -428,11 +440,11 @@ class MedicationWizardView(View):
                 medication, schedule = self._save_medication_and_schedule(session_data, patient)
                 self._clear_session()
                 messages.success(request, "Medication saved successfully.")
-                return redirect("medications:medication_list")
+                return redirect(self._list_url())
 
             self._set_session_data(session_data)
             next_step = step + 1
-            return redirect(f"{reverse('medications:medication_add')}?step={next_step}")
+            return redirect(self._next_step_url(next_step))
 
         patient = self._get_patient(request.user)
         medication = None
@@ -625,12 +637,28 @@ class DoctorMedicationWizardView(AppointmentDoctorRequiredMixin, MedicationWizar
         appointment = self.get_appointment()
         return appointment.patient
 
+    def _next_step_url(self, next_step):
+        appointment_pk = self.kwargs.get("appointment_pk")
+        if self._is_edit():
+            pk = self.kwargs.get("pk")
+            return f"{reverse('medications:doctor_medication_edit', args=[appointment_pk, pk])}?step={next_step}"
+        return f"{reverse('medications:doctor_medication_add', args=[appointment_pk])}?step={next_step}"
+
+    def _list_url(self):
+        appointment_pk = self.kwargs.get("appointment_pk")
+        return reverse("medications:doctor_medication_list", args=[appointment_pk])
+
+    def _is_edit(self):
+        return bool(self.kwargs.get("pk"))
+
     def post(self, request, appointment_pk, pk=None):
         self.kwargs["appointment_pk"] = appointment_pk
+        self.kwargs["pk"] = pk
         return super().post(request, pk=pk)
 
     def get(self, request, appointment_pk, pk=None):
         self.kwargs["appointment_pk"] = appointment_pk
+        self.kwargs["pk"] = pk
         return super().get(request, pk=pk)
 
 

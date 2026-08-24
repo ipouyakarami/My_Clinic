@@ -499,6 +499,133 @@ class DoctorAccessBoundaryTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
+    def _create_doctor_appointment(self, doc_email="doc@example.com", pat_email="pat@example.com"):
+        doc_user = User.objects.create_user(
+            email=doc_email, password=STRONG_PASSWORD,
+            user_type=User.UserType.DOCTOR, first_name="علی", last_name="رضایی", is_active=True,
+        )
+        Doctor.objects.create(user=doc_user, specialty="متخصص داخلی", description="پزشک عمومی", is_verified=True)
+        pat_user = User.objects.create_user(
+            email=pat_email, password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=pat_user, phone_number="09121234567")
+        slot = TimeSlot.objects.create(
+            doctor=doc_user.doctor,
+            date=timezone.now().date() + timezone.timedelta(days=1),
+            start_time=datetime.time(9, 0), end_time=datetime.time(9, 30),
+        )
+        appointment = Appointment.objects.create(patient=patient, time_slot=slot)
+        return doc_user, patient, appointment
+
+    def test_doctor_can_add_medication_to_patient(self):
+        doc_user, patient, appointment = self._create_doctor_appointment()
+        self.client.force_login(doc_user)
+
+        session = self.client.session
+        session["medication_wizard_%d" % doc_user.id] = {
+            "name": "آسپرین", "unit": "قرص", "frequency_type": "daily",
+            "medication_times": ["08:00"], "current_inventory": 30,
+            "refill_reminder_threshold": 5, "start_date": "", "end_date": "",
+        }
+        session.save()
+
+        response = self.client.get(
+            reverse("medications:doctor_medication_add", args=[appointment.pk]) + "?step=6"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            reverse("medications:doctor_medication_add", args=[appointment.pk]),
+            {"step": "6", "frequency_type": "daily"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            Medication.objects.filter(patient=patient, name="آسپرین", is_active=True).exists()
+        )
+
+    def test_doctor_can_edit_patient_medication(self):
+        doc_user, patient, appointment = self._create_doctor_appointment()
+        self.client.force_login(doc_user)
+        med = Medication.objects.create(patient=patient, name="آسپرین", unit="قرص", dosage="۱ قرص")
+
+        response = self.client.get(
+            reverse("medications:doctor_medication_edit", args=[appointment.pk, med.pk]) + "?step=1"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "آسپرین")
+
+        session = self.client.session
+        session["medication_wizard_%d" % doc_user.id] = {
+            "medication_pk": med.pk, "name": "ایبوپروفن", "unit": "قرص",
+            "dosage": "۲ قرص", "frequency_type": "daily",
+            "medication_times": ["08:00"], "current_inventory": 20,
+            "refill_reminder_threshold": 5, "start_date": "", "end_date": "",
+        }
+        session.save()
+
+        response = self.client.post(
+            reverse("medications:doctor_medication_edit", args=[appointment.pk, med.pk]),
+            {"step": "6", "frequency_type": "daily"},
+        )
+        self.assertEqual(response.status_code, 302)
+        med.refresh_from_db()
+        self.assertEqual(med.name, "ایبوپروفن")
+        self.assertEqual(med.dosage, "۲ قرص")
+
+    def test_doctor_redirected_from_patient_medication_urls(self):
+        doc_user, _, _ = self._create_doctor_appointment()
+        self.client.force_login(doc_user)
+        response = self.client.get(reverse("medications:medication_add") + "?step=2")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("appointments:doctor_appointment_list"), response.url)
+
+    def test_doctor_next_step_stays_on_doctor_url(self):
+        """Clicking Next in the wizard must redirect to the doctor URL, not patient URL."""
+        doc_user, patient, appointment = self._create_doctor_appointment()
+        self.client.force_login(doc_user)
+
+        session = self.client.session
+        session["medication_wizard_%d" % doc_user.id] = {
+            "name": "آسپرین", "unit": "قرص", "frequency_type": "daily",
+            "medication_times": ["08:00"], "current_inventory": 30,
+            "refill_reminder_threshold": 5, "start_date": "", "end_date": "",
+        }
+        session.save()
+
+        response = self.client.post(
+            reverse("medications:doctor_medication_add", args=[appointment.pk]),
+            {"step": "1", "name": "آسپرین", "unit": "قرص"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            reverse("medications:doctor_medication_add", args=[appointment.pk]),
+            response.url,
+        )
+
+    def test_doctor_save_redirects_to_doctor_list(self):
+        """Saving a medication must redirect to the doctor list, not patient list."""
+        doc_user, patient, appointment = self._create_doctor_appointment()
+        self.client.force_login(doc_user)
+
+        session = self.client.session
+        session["medication_wizard_%d" % doc_user.id] = {
+            "name": "آسپرین", "unit": "قرص", "frequency_type": "daily",
+            "medication_times": ["08:00"], "current_inventory": 30,
+            "refill_reminder_threshold": 5, "start_date": "", "end_date": "",
+        }
+        session.save()
+
+        response = self.client.post(
+            reverse("medications:doctor_medication_add", args=[appointment.pk]),
+            {"step": "6", "frequency_type": "daily"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            reverse("medications:doctor_medication_list", args=[appointment.pk]),
+        )
+
 
 class MedicationViewTests(TestCase):
     def test_patient_can_add_medication(self):
