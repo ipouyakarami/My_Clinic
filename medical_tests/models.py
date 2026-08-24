@@ -2,6 +2,7 @@ import os
 
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from accounts.models import User
 
@@ -12,36 +13,36 @@ def medical_test_pdf_upload_to(instance, filename):
 
 class MedicalTestResult(models.Model):
     class TestCategory(models.TextChoices):
-        BLOOD = "blood", "آزمایش خون"
-        URINE = "urine", "آزمایش ادرار"
-        STOOL = "stool", "آزمایش مدفوع"
-        THYROID = "thyroid", "آزمایش تیروئید"
-        GLUCOSE = "glucose", "آزمایش قند خون"
-        LIPID = "lipid", "آزمایش چربی خون"
-        HORMONE = "hormone", "آزمایش هورمونی"
-        LIVER = "liver", "آزمایش کبد"
-        KIDNEY = "kidney", "آزمایش کلیه"
-        VITAMIN = "vitamin", "آزمایش ویتامین‌ها و مواد معدنی"
+        BLOOD = "blood", _("Blood Test")
+        URINE = "urine", _("Urine Test")
+        STOOL = "stool", _("Stool Test")
+        THYROID = "thyroid", _("Thyroid Test")
+        GLUCOSE = "glucose", _("Glucose Test")
+        LIPID = "lipid", _("Lipid Test")
+        HORMONE = "hormone", _("Hormone Test")
+        LIVER = "liver", _("Liver Test")
+        KIDNEY = "kidney", _("Kidney Test")
+        VITAMIN = "vitamin", _("Vitamin & Mineral Test")
 
     patient = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name="medical_tests",
-        verbose_name="بیمار",
+        verbose_name=_("patient"),
         limit_choices_to={"user_type": User.UserType.PATIENT},
     )
     category = models.CharField(
-        "نوع آزمایش",
+        _("test category"),
         max_length=20,
         choices=TestCategory.choices,
     )
-    name = models.CharField("نام آزمایش", max_length=200, blank=True)
-    pdf_file = models.FileField("فایل PDF", upload_to=medical_test_pdf_upload_to)
-    uploaded_at = models.DateTimeField("زمان آپلود", auto_now_add=True)
+    name = models.CharField(_("test name"), max_length=200, blank=True)
+    pdf_file = models.FileField(_("PDF file"), upload_to=medical_test_pdf_upload_to)
+    uploaded_at = models.DateTimeField(_("uploaded at"), auto_now_add=True)
 
     class Meta:
-        verbose_name = "نتیجه آزمایش"
-        verbose_name_plural = "نتیجه آزمایش‌ها"
+        verbose_name = _("medical test result")
+        verbose_name_plural = _("medical test results")
         ordering = ["-uploaded_at"]
 
     def __str__(self):

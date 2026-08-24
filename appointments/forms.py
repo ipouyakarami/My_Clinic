@@ -1,5 +1,3 @@
-import jdatetime
-
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -7,9 +5,9 @@ from django.utils import timezone
 from accounts.models import Doctor, Patient, User
 
 
-class JalaliDateField(forms.Field):
+class GregorianDateField(forms.Field):
     def __init__(self, **kwargs):
-        kwargs.setdefault("widget", forms.TextInput(attrs={"placeholder": "مثال: 1403/07/15"}))
+        kwargs.setdefault("widget", forms.TextInput(attrs={"placeholder": "YYYY/MM/DD"}))
         super().__init__(**kwargs)
 
     def clean(self, value):
@@ -20,28 +18,33 @@ class JalaliDateField(forms.Field):
         try:
             parts = value.split("/")
             if len(parts) != 3:
-                raise ValueError("فرمت تاریخ نامعتبر است")
+                raise ValueError("Invalid date format")
             year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
-            jd = jdatetime.date(year, month, day)
-            gregorian = jd.togregorian()
-            if gregorian < timezone.now().date():
-                raise ValidationError("تاریخ نمی‌تواند در گذشته باشد.")
-            return gregorian
+            from datetime import date
+            result = date(year, month, day)
+            if result < timezone.now().date():
+                raise ValidationError("Date cannot be in the past.")
+            return result
         except (ValueError, TypeError) as exc:
-            raise ValidationError("تاریخ وارد شده نامعتبر است. لطفاً از فرمت سال/ماه/روز استفاده کنید.") from exc
+            raise ValidationError("Invalid date. Please use the YYYY/MM/DD format.") from exc
+
+    def prepare_value(self, value):
+        if isinstance(value, str):
+            return value
+        if hasattr(value, "strftime"):
+            return value.strftime("%Y/%m/%d")
+        return value
 
 
 class WorkingHoursForm(forms.Form):
-    jalali_date = JalaliDateField(label="تاریخ (شمسی)")
-    start_time = forms.TimeField(
-        label="ساعت شروع",
-        widget=forms.TimeInput(attrs={"type": "time"}),
-        input_formats=["%H:%M"],
+    date = GregorianDateField(label="Date")
+    start_time = forms.CharField(
+        label="Start Time",
+        widget=forms.TextInput(attrs={"class": "time-range-picker-start", "placeholder": "HH:MM"}),
     )
-    end_time = forms.TimeField(
-        label="ساعت پایان",
-        widget=forms.TimeInput(attrs={"type": "time"}),
-        input_formats=["%H:%M"],
+    end_time = forms.CharField(
+        label="End Time",
+        widget=forms.TextInput(attrs={"class": "time-range-picker-end", "placeholder": "HH:MM"}),
     )
 
     def clean(self):
@@ -49,13 +52,13 @@ class WorkingHoursForm(forms.Form):
         start = cleaned.get("start_time")
         end = cleaned.get("end_time")
         if start and end and end <= start:
-            raise forms.ValidationError("ساعت پایان باید بعد از ساعت شروع باشد.")
+            raise forms.ValidationError("End time must be after start time.")
         return cleaned
 
 
 class VisitSummaryForm(forms.Form):
     doctor_summary = forms.CharField(
-        label="خلاصه ویزیت",
-        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "یادداشت‌های ویزیت..."}),
+        label="Visit Summary",
+        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Visit notes..."}),
         max_length=2000,
     )

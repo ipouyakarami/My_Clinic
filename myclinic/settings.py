@@ -5,6 +5,7 @@ All credentials load from environment variables (.env in dev).
 See requirements.md §2 — never hardcode secrets here.
 """
 
+import datetime
 import os
 from pathlib import Path
 
@@ -49,6 +50,7 @@ INSTALLED_APPS = [
     "accounts",
     "appointments",
     "medical_tests",
+    "medications",
 ]
 
 SITE_ID = 1
@@ -119,8 +121,8 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# Internationalization — Persian UI, Tehran time, Gregorian/UTC storage
-LANGUAGE_CODE = "fa"
+# Internationalization — English UI, Tehran time, Gregorian/UTC storage
+LANGUAGE_CODE = "en"
 
 TIME_ZONE = os.environ.get("TIME_ZONE", "Asia/Tehran")
 
@@ -157,3 +159,18 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ALWAYS_EAGER = False
+
+CELERY_BEAT_SCHEDULE = {
+    "extend-intake-window-daily": {
+        "task": "medications.tasks.extend_intake_window",
+        "schedule": datetime.timedelta(days=1),
+    },
+    "send-medication-reminders-every-minute": {
+        "task": "medications.tasks.send_reminder_emails",
+        "schedule": 60.0,
+    },
+    "transition-missed-intakes-every-minute": {
+        "task": "medications.tasks.transition_missed_intakes",
+        "schedule": 60.0,
+    },
+}

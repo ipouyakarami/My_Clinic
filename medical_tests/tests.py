@@ -41,7 +41,7 @@ class UploadValidationTests(MedicalTestCase):
             uploaded = InMemoryUploadedFile(
                 f, None, "big.pdf", "application/pdf", 6 * 1024 * 1024, None
             )
-            with self.assertRaisesMessage(ValidationError, "حجم فایل نباید بیشتر از ۵ مگابایت باشد"):
+            with self.assertRaisesMessage(ValidationError, "5 MB"):
                 validate_pdf_file(uploaded)
 
     def test_non_pdf_disguised_as_pdf_rejected(self):
@@ -52,7 +52,7 @@ class UploadValidationTests(MedicalTestCase):
             uploaded = InMemoryUploadedFile(
                 f, None, "fake.pdf", "application/pdf", f.tell(), None
             )
-            with self.assertRaisesMessage(ValidationError, "باید از نوع PDF باشد"):
+            with self.assertRaisesMessage(ValidationError, "PDF"):
                 validate_pdf_file(uploaded)
 
     def test_valid_pdf_accepted(self):
@@ -75,7 +75,7 @@ class OwnershipTests(MedicalTestCase):
         MedicalTestResult.objects.create(patient=user2, category="blood", pdf_file=None)
         response = self.client.get(reverse("medical_tests:medical_test_list"))
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "خون")
+        self.assertNotContains(response, "Blood Test")
 
     def test_download_enforces_ownership(self):
         user1 = self._create_patient(email="pat3@example.com")
@@ -106,8 +106,8 @@ class CategoryDropdownTests(MedicalTestCase):
         response = self.client.get(reverse("medical_tests:medical_test_add"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "<select")
-        self.assertContains(response, "آزمایش خون")
-        self.assertContains(response, "آزمایش ویتامین‌ها و مواد معدنی")
+        self.assertContains(response, "Blood Test")
+        self.assertContains(response, "Vitamin &amp; Mineral Test")
 
     def test_invalid_category_rejected_by_validation(self):
         user = self._create_patient(email="invalid@example.com")
@@ -135,4 +135,4 @@ class NameFieldTests(MedicalTestCase):
         )
         response = self.client.get(reverse("medical_tests:medical_test_list"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "آزمایش خون")
+        self.assertContains(response, "Blood Test")

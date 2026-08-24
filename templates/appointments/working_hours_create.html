@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}تعیین ساعات کاری — مای‌کلینیک{% endblock %}
+{% block title %}Set Working Hours — MyClinic{% endblock %}
 
 {% block content %}
     <div class="mx-auto max-w-2xl space-y-6">
         <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
-            <h1 class="mb-6 text-2xl font-bold text-slate-900">تعیین ساعات کاری</h1>
+            <h1 class="mb-6 text-2xl font-bold text-slate-900">Set Working Hours</h1>
 
             <form method="post">
                 {% csrf_token %}
@@ -26,28 +26,28 @@
                     </div>
                 {% endfor %}
                 <button type="submit" class="rounded-lg bg-primary px-5 py-2.5 text-white hover:bg-primary/90">
-                    ایجاد نوبت‌ها
+                    Create Slots
                 </button>
             </form>
         </div>
 
         <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
-            <h2 class="mb-4 text-lg font-bold text-slate-900">جستجو بر اساس تاریخ</h2>
+            <h2 class="mb-4 text-lg font-bold text-slate-900">Search by Date</h2>
             <form method="get" class="flex flex-wrap items-end gap-3">
                 <div class="flex-1 min-w-[200px]">
-                    <label class="mb-1 block text-sm font-medium text-slate-700">تاریخ</label>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Date</label>
                     <select name="date" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" onchange="this.form.submit()">
-                        <option value="">همه تاریخ‌های آینده</option>
+                        <option value="">All Upcoming Dates</option>
                         {% for d in available_dates %}
                             <option value="{{ d.gregorian|date:'Y-m-d' }}" {% if selected_date == d.gregorian|date:'Y-m-d' %}selected{% endif %}>
-                                {{ d.jalali }}
+                                {{ d.display }}
                             </option>
                         {% endfor %}
                     </select>
                 </div>
                 {% if selected_date %}
                     <a href="." class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                        پاک کردن
+                        Clear
                     </a>
                 {% endif %}
             </form>
@@ -56,23 +56,23 @@
         {% if upcoming_slots %}
             <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
                 <h2 class="mb-4 text-lg font-bold text-slate-900">
-                    {% if selected_date %}نوبت‌های {{ selected_date }}{% else %}نوبت‌های آینده{% endif %}
+                    {% if selected_date %}Slots for {{ selected_date }}{% else %}Upcoming Slots{% endif %}
                 </h2>
                 <div class="space-y-3">
                     {% for slot in upcoming_slots %}
                         <div class="flex items-center justify-between rounded-xl border border-slate-100 p-4">
                             <div>
-                                <p class="font-bold text-slate-900">{{ slot.jalali_date }}</p>
-                                <p class="text-sm text-slate-500">{{ slot.start_time|time:"H:i" }} تا {{ slot.end_time|time:"H:i" }}</p>
+                                <p class="font-bold text-slate-900">{{ slot.date|date:"Y/m/d" }}</p>
+                                <p class="text-sm text-slate-500">{{ slot.start_time|time:"H:i" }} to {{ slot.end_time|time:"H:i" }}</p>
                                 {% if slot.is_booked %}
-                                    <span class="mt-1 inline-block rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-primary">رزرو شده</span>
+                                    <span class="mt-1 inline-block rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-primary">Booked</span>
                                 {% endif %}
                             </div>
                             {% if not slot.is_booked %}
-                                <form method="post" action="{% url 'appointments:time_slot_delete' slot.pk %}" onsubmit="return confirm('آیا مطمئن هستید؟')">
+                                <form method="post" action="{% url 'appointments:time_slot_delete' slot.pk %}" onsubmit="return confirm('Are you sure?')">
                                     {% csrf_token %}
                                     <button type="submit" class="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-100">
-                                        حذف
+                                        Delete
                                     </button>
                                 </form>
                             {% endif %}
@@ -82,4 +82,16 @@
             </div>
         {% endif %}
     </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var startInput = document.querySelector('.time-range-picker-start');
+    var endInput = document.querySelector('.time-range-picker-end');
+    if (startInput && endInput) {
+        initTimeRangePicker(startInput, endInput, {});
+    }
+})();
+</script>
 {% endblock %}

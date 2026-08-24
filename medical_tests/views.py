@@ -40,7 +40,7 @@ class MedicalTestUploadView(PatientRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.patient = self.request.user
         response = super().form_valid(form)
-        messages.success(self.request, "فایل آزمایش با موفقیت آپلود شد.")
+        messages.success(self.request, "Test file uploaded successfully.")
         return response
 
 
@@ -55,7 +55,7 @@ class MedicalTestDeleteView(PatientRequiredMixin, DeleteView):
         obj = self.get_object()
         filename = os.path.basename(obj.pdf_file.name)
         response = super().delete(request, *args, **kwargs)
-        messages.success(request, f"فایل «{filename}» با موفقیت حذف شد.")
+        messages.success(request, f"File '{filename}' deleted successfully.")
         return response
 
 

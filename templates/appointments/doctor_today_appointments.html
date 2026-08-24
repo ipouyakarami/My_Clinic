@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}نوبت‌های امروز — مای‌کلینیک{% endblock %}
+{% block title %}Today's Appointments — MyClinic{% endblock %}
 
 {% block content %}
     <div class="mx-auto max-w-4xl">
-        <h1 class="mb-6 text-2xl font-bold text-black">نوبت‌های امروع</h1>
+        <h1 class="mb-6 text-2xl font-bold text-black">Today's Appointments</h1>
 
         {% if appointments %}
             <div class="space-y-4">
@@ -13,7 +13,7 @@
                        class="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-6">
                         <div class="flex items-center gap-4">
                             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
-                                {{ appointment.patient.user.first_name|slice:":1"|default:"ب" }}
+                                {{ appointment.patient.user.first_name|slice:":1"|default:"P" }}
                             </div>
                             <div class="min-w-0">
                                 <h2 class="truncate font-bold text-black group-hover:text-primary">
@@ -24,8 +24,8 @@
                         </div>
                         <div class="mt-4 grid gap-2 text-sm">
                             <p class="text-slate-600">
-                                <span class="font-medium text-slate-500">ساعت:</span>
-                                {{ appointment.time_slot.start_time|time:"H:i" }} تا {{ appointment.time_slot.end_time|time:"H:i" }}
+                                <span class="font-medium text-slate-500">Time:</span>
+                                {{ appointment.time_slot.start_time|time:"H:i" }} to {{ appointment.time_slot.end_time|time:"H:i" }}
                             </p>
                             <span class="inline-block w-max rounded-full px-3 py-1 text-xs font-medium
                                 {% if appointment.status == 'active' %}bg-accent text-primary{% endif %}
@@ -36,14 +36,14 @@
                             </span>
                         </div>
                         <div class="mt-4">
-                            <span class="text-sm font-medium text-primary group-hover:text-primary/80">جزئیات و ویرایش →</span>
+                            <span class="text-sm font-medium text-primary group-hover:text-primary/80">Details & Edit &rarr;</span>
                         </div>
                     </a>
                 {% endfor %}
             </div>
         {% else %}
             <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-                <p class="text-slate-500">امروز نوبتی ثبت نشده است.</p>
+                <p class="text-slate-500">No appointments scheduled for today.</p>
             </div>
         {% endif %}
     </div>

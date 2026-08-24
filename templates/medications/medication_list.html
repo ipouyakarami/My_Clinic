@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}My Medications — MyClinic{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-4xl">
+    <div class="mb-6 flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-slate-900">My Medications</h1>
+        <a href="{% url 'medications:medication_add' %}" class="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary/90">Add Medication</a>
+    </div>
+
+    {% if medications %}
+        <div class="space-y-4">
+            {% for med in medications %}
+                <div class="rounded-3xl border border-slate-200 bg-white p-5">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900">{{ med.name }}</h3>
+                            <p class="text-sm text-slate-500">Unit: {{ med.unit }}</p>
+                            {% if med.dosage %}
+                                <p class="text-sm text-slate-500">Dosage: {{ med.dosage }}</p>
+                            {% endif %}
+                            <p class="text-sm text-slate-500">Inventory: {{ med.current_inventory }}</p>
+                            {% if med.refill_reminder_threshold %}
+                                <p class="text-sm text-slate-500">Refill Threshold: {{ med.refill_reminder_threshold }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="flex gap-2">
+                            <a href="{% url 'medications:medication_edit' med.pk %}" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Edit</a>
+                            <a href="{% url 'medications:medication_delete' med.pk %}" class="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50">Delete</a>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'medications:medication_calendar' %}" class="text-sm text-primary hover:underline">View in Calendar</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="rounded-3xl border border-slate-200 bg-white p-8 text-center">
+            <p class="text-slate-500">You haven't added any medications yet.</p>
+            <a href="{% url 'medications:medication_add' %}" class="mt-4 inline-block rounded-lg bg-primary px-5 py-2.5 text-white hover:bg-primary/90">Add Medication</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

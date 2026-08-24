@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.utils.translation import gettext_lazy as _
 
 from allauth.account.forms import LoginForm
 
@@ -10,7 +11,7 @@ from .services import send_activation_email
 User = get_user_model()
 
 
-class PersianFormMixin:
+class FormMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
@@ -31,18 +32,18 @@ class MyClinicLoginForm(LoginForm):
             if user and not user.is_active:
                 send_activation_email(self.request, user)
                 raise forms.ValidationError(
-                    "اگر این ایمیل در سیستم ثبت شده باشد، لینک فعال‌سازی حساب "
-                    "برای شما مجدداً ارسال شد؛ لطفاً ایمیل خود را بررسی کنید."
+                    "If this email is registered, an activation link has been resent "
+                    "to you; please check your inbox."
                 )
             raise
 
 
-class PatientSignupForm(PersianFormMixin, forms.Form):
-    email = forms.EmailField(label="ایمیل")
-    first_name = forms.CharField(label="نام", max_length=150)
-    last_name = forms.CharField(label="نام خانوادگی", max_length=150)
+class PatientSignupForm(FormMixin, forms.Form):
+    email = forms.EmailField(label=_("Email"))
+    first_name = forms.CharField(label=_("First Name"), max_length=150)
+    last_name = forms.CharField(label=_("Last Name"), max_length=150)
     phone_number = forms.CharField(
-        label="شماره تماس (اختیاری)",
+        label=_("Phone Number (optional)"),
         max_length=15,
         required=False,
     )
@@ -51,15 +52,15 @@ class PatientSignupForm(PersianFormMixin, forms.Form):
         email = self.cleaned_data["email"].lower()
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError(
-                "این ایمیل قبلاً ثبت شده است. اگر رمز خود را فراموش کرده‌اید، "
-                "از بازیابی رمز عبور استفاده کنید."
+                "This email is already registered. If you have forgotten your password, "
+                "use the password recovery option."
             )
         return email
 
 
-class SetPasswordForm(PersianFormMixin, forms.Form):
-    password1 = forms.CharField(label="رمز عبور", widget=forms.PasswordInput)
-    password2 = forms.CharField(label="تکرار رمز عبور", widget=forms.PasswordInput)
+class SetPasswordForm(FormMixin, forms.Form):
+    password1 = forms.CharField(label=_("Password"), widget=forms.PasswordInput)
+    password2 = forms.CharField(label=_("Confirm Password"), widget=forms.PasswordInput)
 
     def clean_password1(self):
         password = self.cleaned_data["password1"]
@@ -70,14 +71,14 @@ class SetPasswordForm(PersianFormMixin, forms.Form):
         cleaned = super().clean()
         p1, p2 = cleaned.get("password1"), cleaned.get("password2")
         if p1 and p2 and p1 != p2:
-            raise forms.ValidationError("رمز عبور و تکرار آن یکسان نیستند.")
+            raise forms.ValidationError("Password and confirmation do not match.")
         return cleaned
 
 
-class DoctorCreationForm(PersianFormMixin, forms.ModelForm):
-    specialty = forms.CharField(label="تخصص", max_length=100)
+class DoctorCreationForm(FormMixin, forms.ModelForm):
+    specialty = forms.CharField(label=_("Specialty"), max_length=100)
     description = forms.CharField(
-        label="توضیحات",
+        label=_("Description"),
         widget=forms.Textarea(attrs={"rows": 4}),
     )
 
@@ -85,15 +86,15 @@ class DoctorCreationForm(PersianFormMixin, forms.ModelForm):
         model = User
         fields = ["email", "first_name", "last_name"]
         labels = {
-            "email": "ایمیل",
-            "first_name": "نام",
-            "last_name": "نام خانوادگی",
+            "email": _("Email"),
+            "first_name": _("First Name"),
+            "last_name": _("Last Name"),
         }
 
     def clean_email(self):
         email = self.cleaned_data["email"].lower()
         if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError("کاربری با این ایمیل وجود دارد.")
+            raise forms.ValidationError("A user with this email already exists.")
         return email
 
     def save(self, commit=True):

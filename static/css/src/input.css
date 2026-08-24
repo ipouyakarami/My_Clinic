@@ -6,13 +6,7 @@
 @source "../../../medications/templates/";
 
 @theme {
-    --font-sans: "Vazirmatn", "Tahoma", ui-sans-serif, system-ui, sans-serif;
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --color-primary: #4e598c;
     --color-accent: #f9c784;
-}
-
-@layer base {
-    html {
-        direction: rtl;
-    }
 }

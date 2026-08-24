@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}نوبت‌های من — مای‌کلینیک{% endblock %}
+{% block title %}My Appointments — MyClinic{% endblock %}
 
 {% block content %}
     <div class="mx-auto max-w-4xl">
-        <h1 class="mb-6 text-2xl font-bold text-black">نوبت‌های من</h1>
+        <h1 class="mb-6 text-2xl font-bold text-black">My Appointments</h1>
 
         {% if appointments %}
             <div class="space-y-4">
@@ -13,17 +13,17 @@
                        class="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                         <div class="flex items-center gap-4">
                             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
-                                {{ appointment.time_slot.doctor.user.first_name|slice:":1"|default:"د" }}
+                                {{ appointment.time_slot.doctor.user.first_name|slice:":1"|default:"D" }}
                             </div>
                             <div class="min-w-0">
-                                <h2 class="truncate font-bold text-black group-hover:text-primary">دکتر {{ appointment.time_slot.doctor.user.get_full_name }}</h2>
+                                <h2 class="truncate font-bold text-black group-hover:text-primary">Dr. {{ appointment.time_slot.doctor.user.get_full_name }}</h2>
                                 <p class="mt-1 text-sm text-primary">{{ appointment.time_slot.doctor.specialty }}</p>
                             </div>
                         </div>
                         <div class="mt-4 grid gap-2 text-sm">
                             <p class="text-slate-600">
-                                <span class="font-medium text-slate-500">تاریخ:</span>
-                                {{ appointment.time_slot.jalali_date }} — {{ appointment.time_slot.start_time|time:"H:i" }} تا {{ appointment.time_slot.end_time|time:"H:i" }}
+                                <span class="font-medium text-slate-500">Date:</span>
+                                {{ appointment.time_slot.date|date:"Y/m/d" }} — {{ appointment.time_slot.start_time|time:"H:i" }} to {{ appointment.time_slot.end_time|time:"H:i" }}
                             </p>
                             <span class="inline-block w-max rounded-full px-3 py-1 text-xs font-medium
                                 {% if appointment.status == 'active' %}bg-accent text-primary{% endif %}
@@ -35,7 +35,7 @@
                         </div>
                         {% if appointment.doctor_summary %}
                             <div class="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
-                                <strong>خلاصه ویزیت:</strong>
+                                <strong>Visit Summary:</strong>
                                 <p class="mt-1">{{ appointment.doctor_summary }}</p>
                             </div>
                         {% endif %}
@@ -43,12 +43,12 @@
                             {% if appointment.status == 'active' %}
                                 <a href="{% url 'appointments:appointment_cancel' pk=appointment.pk %}"
                                    class="inline-flex items-center justify-center rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-700 shadow-sm ring-1 ring-red-200">
-                                    لغو نوبت
+                                    Cancel Appointment
                                 </a>
                             {% endif %}
                             <a href="{% url 'core:doctor_detail' pk=appointment.time_slot.doctor.pk %}"
                                class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                                مشاهده پزشک
+                                View Doctor
                             </a>
                         </div>
                     </a>
@@ -56,9 +56,9 @@
             </div>
         {% else %}
             <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-                <p class="text-slate-500">هنوز نوبتی رزرو نکرده‌اید.</p>
+                <p class="text-slate-500">You haven't booked any appointments yet.</p>
                 <a href="{% url 'core:doctor_list' %}" class="mt-4 inline-block rounded-lg bg-primary px-5 py-2.5 text-sm text-white hover:bg-primary/90">
-                    مشاهده پزشکان
+                    View Doctors
                 </a>
             </div>
         {% endif %}

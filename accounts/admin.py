@@ -13,13 +13,13 @@ User = get_user_model()
 class PatientProfileInline(admin.StackedInline):
     model = Patient
     can_delete = False
-    verbose_name_plural = "پروفایل بیمار"
+    verbose_name_plural = "Patient Profile"
 
 
 class DoctorProfileInline(admin.StackedInline):
     model = Doctor
     can_delete = False
-    verbose_name_plural = "پروفایل پزشک"
+    verbose_name_plural = "Doctor Profile"
 
 
 @admin.register(User)
@@ -37,19 +37,19 @@ class MyClinicUserAdmin(DjangoUserAdmin):
                     "specialty",
                     "description",
                 ),
-                "description": "با ثبت این فرم، حساب پزشک ساخته شده و ایمیل فعال‌سازی برای او ارسال می‌شود.",
+                "description": "Submitting this form creates a doctor account and sends an activation email.",
             },
         ),
     )
 
     fieldsets = (
-        ("اطلاعات کاربر", {"fields": ("email", "first_name", "last_name", "user_type")}),
+        ("User Info", {"fields": ("email", "first_name", "last_name", "user_type")}),
         (
-            "دسترسی‌ها",
+            "Permissions",
             {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")},
         ),
         (
-            "تاریخ‌ها",
+            "Dates",
             {"fields": ("last_login", "date_joined"), "classes": ("collapse",)},
         ),
     )
@@ -68,7 +68,7 @@ class MyClinicUserAdmin(DjangoUserAdmin):
     ordering = ("-date_joined",)
     filter_horizontal = ("groups", "user_permissions")
 
-    @admin.display(description="نام کامل")
+    @admin.display(description="Full Name")
     def get_full_name(self, obj):
         return obj.get_full_name()
 
@@ -100,13 +100,13 @@ class MyClinicUserAdmin(DjangoUserAdmin):
             if sent:
                 self.message_user(
                     request,
-                    f"حساب پزشک ساخته شد و ایمیل فعال‌سازی به {obj.email} ارسال گردید.",
+                    f"Doctor account created and activation email sent to {obj.email}.",
                     level=messages.SUCCESS,
                 )
             else:
                 self.message_user(
                     request,
-                    "حساب پزشک ساخته شد اما ارسال ایمیل فعال‌سازی ناموفق بود.",
+                    "Doctor account created but activation email failed to send.",
                     level=messages.ERROR,
                 )
 

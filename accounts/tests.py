@@ -42,13 +42,13 @@ class PatientSignupTests(TestCase):
         self.assertFalse(email_address.verified)
         self.assertTrue(email_address.primary)
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn("فعال‌سازی", mail.outbox[0].subject)
+        self.assertIn("Activate", mail.outbox[0].subject)
 
     def test_duplicate_email_is_rejected(self):
         self._signup()
         response = self._signup(email="SARA@example.com")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "قبلاً ثبت شده")
+        self.assertContains(response, "already registered")
         self.assertEqual(User.objects.count(), 1)
 
     def test_invalid_email_is_rejected(self):
@@ -84,7 +84,7 @@ class ActivationFlowTests(TestCase):
         )
         self.assertContains(
             self.client.get(reverse("account_login")),
-            "نامعتبر است",
+            "invalid",
             status_code=200,
         )
 
@@ -104,7 +104,7 @@ class ActivationFlowTests(TestCase):
             {"password1": STRONG_PASSWORD, "password2": "Different-Pass-1"},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "یکسان نیستند")
+        self.assertContains(response, "do not match")
 
     def test_successful_activation_sets_password_verifies_and_logs_in(self):
         key = self._signup_and_get_key()
@@ -168,7 +168,7 @@ class UnverifiedLoginTests(TestCase):
         self.assertFalse(user.is_active)
         session = self.client.session
         self.assertNotIn("_auth_user_id", session)
-        self.assertContains(response, "بررسی کنید")
+        self.assertContains(response, "check")
         self.assertEqual(len(mail.outbox), self.initial_outbox_count + 1)
         self.assertIn("/accounts/activate/", mail.outbox[-1].body)
 
@@ -178,7 +178,7 @@ class UnverifiedLoginTests(TestCase):
             {"login": "ghost@example.com", "password": "whatever-Pass-1"},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "فعال‌سازی حساب برای شما مجدداً ارسال شد")
+        self.assertNotContains(response, "activation link has been resent")
         self.assertEqual(len(mail.outbox), self.initial_outbox_count)
 
     def test_verified_user_can_log_in(self):
@@ -194,7 +194,7 @@ class UnverifiedLoginTests(TestCase):
             {"login": "mina@example.com", "password": STRONG_PASSWORD},
             follow=True,
         )
-        self.assertContains(response, "داشبورد بیمار")
+        self.assertContains(response, "Patient Dashboard")
 
 
 class RoleBasedDashboardTests(TestCase):
@@ -252,7 +252,7 @@ class RoleBasedDashboardTests(TestCase):
             {"login": "p@example.com", "password": STRONG_PASSWORD},
             follow=True,
         )
-        self.assertContains(response, "داشبورد بیمار")
+        self.assertContains(response, "Patient Dashboard")
 
     def test_doctor_login_redirects_to_dashboard(self):
         self._doctor_with_password()
@@ -261,7 +261,7 @@ class RoleBasedDashboardTests(TestCase):
             {"login": "doc@example.com", "password": STRONG_PASSWORD},
             follow=True,
         )
-        self.assertContains(response, "داشبورد پزشک")
+        self.assertContains(response, "Doctor Dashboard")
 
 
 class DoctorCreationFormTests(TestCase):
@@ -337,7 +337,7 @@ class AdminDoctorCreationTests(TestCase):
         user = User.objects.get(email="e2edoc@example.com")
         self.assertTrue(user.is_active)
         self.assertTrue(EmailAddress.objects.get(user=user).verified)
-        self.assertContains(response, "داشبورد پزشک")
+        self.assertContains(response, "Doctor Dashboard")
 
 
 class PasswordResetFlowTests(TestCase):
@@ -372,9 +372,9 @@ class PasswordResetFlowTests(TestCase):
         set_password_path = urlparse(response["Location"]).path
         page = self.client.get(set_password_path)
         self.assertEqual(page.status_code, 200)
-        self.assertContains(page, "تعیین رمز عبور جدید")
+        self.assertContains(page, "Set New Password")
         self.assertContains(page, 'name="password1"')
-        self.assertNotContains(page, "لینک نامعتبر است")
+        self.assertNotContains(page, "Invalid Link")
 
         response = self.client.post(
             set_password_path,
@@ -392,7 +392,7 @@ class PasswordResetFlowTests(TestCase):
             follow=True,
         )
         self.assertIn("_auth_user_id", self.client.session)
-        self.assertContains(login, "داشبورد بیمار")
+        self.assertContains(login, "Patient Dashboard")
 
     def test_set_password_page_without_session_shows_invalid_link(self):
         self.client.post(
@@ -405,13 +405,13 @@ class PasswordResetFlowTests(TestCase):
 
         fresh_client = Client()
         page = fresh_client.get(set_password_path)
-        self.assertContains(page, "لینک نامعتبر است", status_code=200)
+        self.assertContains(page, "Invalid Link", status_code=200)
 
     def test_bogus_reset_key_shows_invalid_link(self):
         page = self.client.get(
             "/accounts/password/reset/key/1-totallyboguskey123456/"
         )
-        self.assertContains(page, "لینک نامعتبر است", status_code=200)
+        self.assertContains(page, "Invalid Link", status_code=200)
 
 
 class LogoutTests(TestCase):

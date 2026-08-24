@@ -66,7 +66,7 @@ class WorkingHoursTests(AppointmentTestCase):
         self._login(user)
         response = self.client.post(
             reverse("appointments:working_hours_create"),
-            {"jalali_date": "1405/07/15", "start_time": "09:00", "end_time": "10:00"},
+            {"date": "2026/08/25", "start_time": "09:00", "end_time": "10:00"},
         )
         self.assertEqual(response.status_code, 302)
         slots = TimeSlot.objects.filter(doctor=doctor)
@@ -80,11 +80,11 @@ class WorkingHoursTests(AppointmentTestCase):
         self._login(user)
         response = self.client.post(
             reverse("appointments:working_hours_create"),
-            {"jalali_date": "1405/07/15", "start_time": "09:00", "end_time": "10:45"},
+            {"date": "2026/08/25", "start_time": "09:00", "end_time": "10:45"},
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "15 دقیقه")
+        self.assertContains(response, "15 minute")
 
     def test_expired_unbooked_slots_removed(self):
         user, doctor = self._create_doctor()
@@ -97,11 +97,11 @@ class WorkingHoursTests(AppointmentTestCase):
         self._login(user)
         response = self.client.post(
             reverse("appointments:working_hours_create"),
-            {"jalali_date": "1405/07/15", "start_time": "09:00", "end_time": "09:30"},
+            {"date": "2026/08/25", "start_time": "09:00", "end_time": "09:30"},
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "منقضی")
+        self.assertContains(response, "expired")
         self.assertFalse(TimeSlot.objects.filter(pk=past_slot.pk).exists())
 
     def test_dedupes_existing_slots(self):
@@ -109,11 +109,11 @@ class WorkingHoursTests(AppointmentTestCase):
         self._login(user)
         self.client.post(
             reverse("appointments:working_hours_create"),
-            {"jalali_date": "1405/07/15", "start_time": "09:00", "end_time": "09:30"},
+            {"date": "2026/08/25", "start_time": "09:00", "end_time": "09:30"},
         )
         self.client.post(
             reverse("appointments:working_hours_create"),
-            {"jalali_date": "1405/07/15", "start_time": "09:00", "end_time": "09:30"},
+            {"date": "2026/08/25", "start_time": "09:00", "end_time": "09:30"},
         )
         slots = TimeSlot.objects.filter(doctor=doctor)
         self.assertEqual(slots.count(), 1)
@@ -121,8 +121,6 @@ class WorkingHoursTests(AppointmentTestCase):
     def test_overlapping_range_rejected(self):
         user, doctor = self._create_doctor()
         target_date = timezone.now().date() + datetime.timedelta(days=10)
-        import jdatetime
-        jalali_date = jdatetime.date.fromgregorian(date=target_date).strftime("%Y/%m/%d")
         TimeSlot.objects.create(
             doctor=doctor,
             date=target_date,
@@ -132,31 +130,31 @@ class WorkingHoursTests(AppointmentTestCase):
         self._login(user)
         response = self.client.post(
             reverse("appointments:working_hours_create"),
-            {"jalali_date": jalali_date, "start_time": "09:15", "end_time": "09:45"},
+            {"date": target_date.strftime("%Y/%m/%d"), "start_time": "09:15", "end_time": "09:45"},
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "تعارض")
+        self.assertContains(response, "conflict")
 
-    def test_past_jalali_date_rejected(self):
+    def test_past_date_rejected(self):
         user, doctor = self._create_doctor()
         self._login(user)
         response = self.client.post(
             reverse("appointments:working_hours_create"),
-            {"jalali_date": "1300/01/01", "start_time": "09:00", "end_time": "10:00"},
+            {"date": "2020/01/01", "start_time": "09:00", "end_time": "10:00"},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "گذشته")
+        self.assertContains(response, "past")
 
-    def test_malformed_jalali_date_rejected(self):
+    def test_malformed_date_rejected(self):
         user, doctor = self._create_doctor()
         self._login(user)
         response = self.client.post(
             reverse("appointments:working_hours_create"),
-            {"jalali_date": "not-a-date", "start_time": "09:00", "end_time": "10:00"},
+            {"date": "not-a-date", "start_time": "09:00", "end_time": "10:00"},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "نامعتبر")
+        self.assertContains(response, "Invalid")
 
 
 class TimeSlotDeleteTests(AppointmentTestCase):
@@ -177,7 +175,7 @@ class TimeSlotDeleteTests(AppointmentTestCase):
         response = self.client.post(reverse("appointments:time_slot_delete", args=[slot.pk]), follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(TimeSlot.objects.filter(pk=slot.pk).exists())
-        self.assertContains(response, "قبلاً رزرو شده")
+        self.assertContains(response, "already booked")
 
 
 class BookingTests(AppointmentTestCase):
@@ -210,7 +208,7 @@ class BookingTests(AppointmentTestCase):
 
         response2 = self.client.post(url, follow=True)
         self.assertEqual(response2.status_code, 200)
-        self.assertContains(response2, "تازه رزرو شده")
+        self.assertContains(response2, "just been booked")
         self.assertEqual(Appointment.objects.count(), 1)
 
         slot.refresh_from_db()
@@ -234,7 +232,7 @@ class CancelAppointmentTests(AppointmentTestCase):
             self._login(pat_user)
             response = self.client.post(reverse("appointments:appointment_cancel", args=[appointment.pk]), follow=True)
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, "۱۲ ساعت قبل")
+            self.assertContains(response, "12 hours")
 
     def test_cancel_succeeds_after_12_hours(self):
         doc_user, doctor = self._create_doctor()
@@ -303,7 +301,7 @@ class BookingConfirmationEmailTests(AppointmentTestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn("تایید", mail.outbox[0].subject)
+        self.assertIn("Confirmation", mail.outbox[0].subject)
         self.assertIn(pat_user.email, mail.outbox[0].to)
 
 
@@ -326,7 +324,7 @@ class DoctorMedicalTestAccessTests(AppointmentTestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "CBC")
-        self.assertContains(response, "نتایج آزمایش بیمار")
+        self.assertContains(response, "Patient's Test Results")
         self.assertContains(
             response,
             reverse("medical_tests:medical_test_download_doctor", args=[test_result.pk]),
@@ -338,7 +336,7 @@ class DoctorMedicalTestAccessTests(AppointmentTestCase):
             reverse("appointments:appointment_detail", args=[self.appointment.pk])
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "بیمار هنوز نتیجه آزمایشی بارگذاری نکرده است")
+        self.assertContains(response, "The patient hasn't uploaded any test results yet")
 
     def test_doctor_filters_patient_medical_tests_by_type(self):
         blood_test = MedicalTestResult.objects.create(
@@ -353,7 +351,7 @@ class DoctorMedicalTestAccessTests(AppointmentTestCase):
             + "?test_type=blood"
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "آزمایش خون")
+        self.assertContains(response, "Blood Test")
         self.assertContains(
             response,
             reverse("medical_tests:medical_test_download_doctor", args=[blood_test.pk]),
@@ -375,8 +373,8 @@ class DoctorMedicalTestAccessTests(AppointmentTestCase):
             reverse("appointments:appointment_detail", args=[self.appointment.pk])
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "آزمایش خون")
-        self.assertContains(response, "آزمایش ادرار")
+        self.assertContains(response, "Blood Test")
+        self.assertContains(response, "Urine Test")
 
     @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
     def test_doctor_can_download_patient_medical_test(self):

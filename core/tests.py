@@ -12,8 +12,8 @@ class SettingsConfigTest(SimpleTestCase):
     def test_utc_storage_enabled(self):
         self.assertTrue(settings.USE_TZ)
 
-    def test_language_is_persian(self):
-        self.assertEqual(settings.LANGUAGE_CODE, "fa")
+    def test_language_is_english(self):
+        self.assertEqual(settings.LANGUAGE_CODE, "en")
 
     def test_database_is_postgresql(self):
         self.assertEqual(
@@ -74,23 +74,23 @@ class PublicPagesTest(TestCase):
     def test_home_page_renders(self):
         response = self.client.get(reverse("core:home"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "نوبت پزشک")
+        self.assertContains(response, "Book Appointment")
 
     def test_home_page_shows_hero_with_clinic_name(self):
         response = self.client.get(reverse("core:home"))
-        self.assertContains(response, "مای‌کلینیک")
+        self.assertContains(response, "MyClinic")
         self.assertContains(response, "heroimage.jpg")
 
     def test_home_page_shows_doctor_carousel_section(self):
         response = self.client.get(reverse("core:home"))
-        self.assertContains(response, "با یک دکمه نوبت بگیر")
-        self.assertContains(response, "دکتر سارا محمدی")
+        self.assertContains(response, "Book with one click")
+        self.assertContains(response, "Dr. سارا محمدی")
         self.assertContains(response, "متخصص داخلی")
 
     def test_home_page_shows_footer_with_info(self):
         response = self.client.get(reverse("core:home"))
-        self.assertContains(response, "حریم خصوصی")
-        self.assertContains(response, "شرایط استفاده")
+        self.assertContains(response, "Privacy Policy")
+        self.assertContains(response, "Terms of Use")
 
     def test_nav_links_to_doctor_list(self):
         response = self.client.get(reverse("core:home"))
@@ -99,8 +99,8 @@ class PublicPagesTest(TestCase):
     def test_doctor_list_shows_only_active(self):
         response = self.client.get(reverse("core:doctor_list"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "دکتر سارا محمدی")
-        self.assertNotContains(response, "دکتر رضا کریمی")
+        self.assertContains(response, "Dr. سارا محمدی")
+        self.assertNotContains(response, "Dr. رضا کریمی")
 
     def test_specialty_pills_rendered_from_distinct_values(self):
         response = self.client.get(reverse("core:doctor_list"))
@@ -111,20 +111,20 @@ class PublicPagesTest(TestCase):
             reverse("core:doctor_list"), {"specialty": "متخصص داخلی"}
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "دکتر سارا محمدی")
+        self.assertContains(response, "Dr. سارا محمدی")
 
     def test_doctor_list_filter_without_match_shows_empty_state(self):
         response = self.client.get(
             reverse("core:doctor_list"), {"specialty": "تخصص ناموجود"}
         )
-        self.assertContains(response, "پزشکی با این تخصص ثبت نشده است")
+        self.assertContains(response, "No doctors registered with this specialty")
 
     def test_doctor_detail_public(self):
         response = self.client.get(
             reverse("core:doctor_detail", kwargs={"pk": self.doctor.pk})
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "دکتر سارا محمدی")
+        self.assertContains(response, "Dr. سارا محمدی")
         self.assertContains(response, "متخصص داخلی")
         self.assertContains(response, "ده سال سابقه")
 

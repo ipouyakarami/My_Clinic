@@ -1,5 +1,4 @@
 import datetime
-import jdatetime
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -14,7 +13,7 @@ from accounts.models import Doctor, Patient, User
 
 from medical_tests.models import MedicalTestResult
 
-from .forms import JalaliDateField, VisitSummaryForm, WorkingHoursForm
+from .forms import GregorianDateField, VisitSummaryForm, WorkingHoursForm
 from .models import Appointment, TimeSlot
 
 
@@ -66,10 +65,7 @@ class WorkingHoursCreateView(DoctorRequiredMixin, FormView):
         context["upcoming_slots"] = slots_qs.order_by("date", "start_time")[:50]
 
         context["available_dates"] = [
-            {
-                "gregorian": d,
-                "jalali": jdatetime.date.fromgregorian(date=d).strftime("%Y/%m/%d"),
-            }
+            {"gregorian": d, "display": d.strftime("%Y/%m/%d")}
             for d in TimeSlot.objects.filter(doctor=doctor, is_booked=False)
             .order_by("date")
             .values_list("date", flat=True)
@@ -79,13 +75,25 @@ class WorkingHoursCreateView(DoctorRequiredMixin, FormView):
 
     def form_valid(self, form):
         doctor = self.request.user.doctor
-        gregorian_date = form.cleaned_data["jalali_date"]
-        start_time = form.cleaned_data["start_time"]
-        end_time = form.cleaned_data["end_time"]
+        slot_date = form.cleaned_data["date"]
+        start_time_str = form.cleaned_data["start_time"]
+        end_time_str = form.cleaned_data["end_time"]
+
+        def parse_time(value):
+            if isinstance(value, datetime.time):
+                return value
+            if isinstance(value, str):
+                parts = value.split(":")
+                if len(parts) == 2:
+                    return datetime.time(int(parts[0]), int(parts[1]))
+            raise ValueError(f"Invalid time format: {value}")
+
+        start_time = parse_time(start_time_str)
+        end_time = parse_time(end_time_str)
 
         overlapping_slots = TimeSlot.objects.filter(
             doctor=doctor,
-            date=gregorian_date,
+            date=slot_date,
         ).filter(
             start_time__lt=end_time,
             end_time__gt=start_time,
@@ -94,13 +102,13 @@ class WorkingHoursCreateView(DoctorRequiredMixin, FormView):
         if overlapping_slots.exists():
             form.add_error(
                 "__all__",
-                f"تعارض زمانی: در این تاریخ {overlapping_slots.count()} نوبت با بازه انتخابی شما همپوشانی دارد. لطفاً بازه دیگری انتخاب کنید.",
+                f"Time conflict: {overlapping_slots.count()} slot(s) on this date overlap with your selection. Please choose a different range.",
             )
             return self.form_invalid(form)
 
         existing_slots = TimeSlot.objects.filter(
             doctor=doctor,
-            date=gregorian_date,
+            date=slot_date,
             start_time__gte=start_time,
             start_time__lt=end_time,
         )
@@ -108,15 +116,15 @@ class WorkingHoursCreateView(DoctorRequiredMixin, FormView):
 
         created = []
         dropped_minutes = 0
-        current = datetime.datetime.combine(gregorian_date, start_time)
-        end_dt = datetime.datetime.combine(gregorian_date, end_time)
+        current = datetime.datetime.combine(slot_date, start_time)
+        end_dt = datetime.datetime.combine(slot_date, end_time)
 
         while current + datetime.timedelta(minutes=30) <= end_dt:
             slot_start = current.time()
             if slot_start not in existing_starts:
                 slot = TimeSlot.objects.create(
                     doctor=doctor,
-                    date=gregorian_date,
+                    date=slot_date,
                     start_time=slot_start,
                     end_time=(current + datetime.timedelta(minutes=30)).time(),
                 )
@@ -132,11 +140,11 @@ class WorkingHoursCreateView(DoctorRequiredMixin, FormView):
             exclude_pks=[slot.pk for slot in created],
         )
 
-        message = f"{len(created)} نوبت جدید ایجاد شد."
+        message = f"{len(created)} new slot(s) created."
         if dropped_minutes:
-            message += f" {dropped_minutes} دقیقه باقی‌مانده به دلیل عدم تقسیم‌پذیری بر ۳۰ دقیقه حذف شد."
+            message += f" {dropped_minutes} minute(s) could not be scheduled."
         if expired_count:
-            message += f" {expired_count} نوبت منقضی حذف شد."
+            message += f" {expired_count} expired slot(s) removed."
         messages.success(self.request, message)
         return redirect("appointments:working_hours_create")
 
@@ -145,10 +153,10 @@ class TimeSlotDeleteView(DoctorRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         slot = get_object_or_404(TimeSlot, pk=kwargs["pk"], doctor__user=request.user)
         if slot.is_booked:
-            messages.error(request, "این نوبت قبلاً رزرو شده و قابل حذف نیست.")
+            messages.error(request, "This slot is already booked and cannot be deleted.")
         else:
             slot.delete()
-            messages.success(request, "نوبت با موفقیت حذف شد.")
+            messages.success(request, "Slot deleted successfully.")
         return redirect("appointments:working_hours_create")
 
 
@@ -170,7 +178,7 @@ class BookAppointmentView(PatientRequiredMixin, FormView):
         slot = self.get_slot()
         locked = TimeSlot.objects.select_for_update().get(pk=slot.pk)
         if locked.is_booked:
-            messages.error(self.request, "این نوبت تازه رزرو شده است. لطفاً نوبت دیگری انتخاب کنید.")
+            messages.error(self.request, "This slot has just been booked. Please choose another.")
             return redirect("core:doctor_detail", pk=locked.doctor.pk)
 
         patient = Patient.objects.get(user=self.request.user)
@@ -182,7 +190,7 @@ class BookAppointmentView(PatientRequiredMixin, FormView):
         locked.is_booked = True
         locked.save(update_fields=["is_booked"])
 
-        messages.success(self.request, "نوبت شما با موفقیت رزرو شد. اطلاعات تاییدیه به ایمیل شما ارسال شد.")
+        messages.success(self.request, "Your appointment has been booked successfully. A confirmation email has been sent to you.")
         self._send_confirmation_email(appointment)
         return redirect("appointments:patient_appointment_list")
 
@@ -191,7 +199,7 @@ class BookAppointmentView(PatientRequiredMixin, FormView):
         from django.template.loader import render_to_string
 
         slot = appointment.time_slot
-        subject = "تایید رزرو نوبت — مای‌کلینیک"
+        subject = "Appointment Confirmation — MyClinic"
         body = render_to_string(
             "emails/appointment_confirmation.txt",
             {
@@ -256,7 +264,7 @@ class CancelAppointmentView(PatientRequiredMixin, FormView):
         if start_dt - now < timezone.timedelta(hours=12):
             messages.error(
                 self.request,
-                "تا ۱۲ ساعت قبل از نوبت امکان لغو وجود دارد. برای لغو این نوبت با پزشک تماس بگیرید.",
+                "Cancellations are only allowed up to 12 hours before the appointment. Please contact your doctor to cancel this appointment.",
             )
             return redirect("appointments:patient_appointment_list")
 
@@ -267,7 +275,7 @@ class CancelAppointmentView(PatientRequiredMixin, FormView):
             appointment.cancelled_at = now
             appointment.save(update_fields=["status", "cancelled_at"])
 
-        messages.success(self.request, "نوبت شما با موفقیت لغو شد.")
+        messages.success(self.request, "Your appointment has been cancelled successfully.")
         return redirect("appointments:patient_appointment_list")
 
 
@@ -314,9 +322,9 @@ class DoctorAppointmentDetailView(DoctorRequiredMixin, DetailView):
             self.object.doctor_summary = form.cleaned_data["doctor_summary"]
             self.object.status = Appointment.Status.COMPLETED
             self.object.save(update_fields=["doctor_summary", "status"])
-            messages.success(request, "ویزیت با موفقیت ثبت شد.")
+            messages.success(request, "Visit summary saved successfully.")
             return redirect("appointments:appointment_detail", pk=self.object.pk)
-        messages.error(request, "خطا در ثبت خلاصه ویزیت.")
+        messages.error(request, "Error saving visit summary.")
         return self.get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):

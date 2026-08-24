@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تایید رزرو نوبت</title>
+    <title>Appointment Confirmation</title>
     <style>
-        body { font-family: 'Vazirmatn', Tahoma, sans-serif; direction: rtl; text-align: right; color: #1f2937; background-color: #f8fafc; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; direction: ltr; text-align: left; color: #1f2937; background-color: #f8fafc; }
         .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 16px; padding: 32px; border: 1px solid #e2e8f0; }
         .header { font-size: 20px; font-weight: 700; color: #0f766e; margin-bottom: 16px; }
         .info { background: #f0fdfa; border-radius: 12px; padding: 16px; margin: 16px 0; }
@@ -17,20 +17,20 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">تایید رزرو نوبت</div>
-        <p>نوبت شما با موفقیت رزرو شد.</p>
+        <div class="header">Appointment Confirmation</div>
+        <p>Your appointment has been booked successfully.</p>
         <div class="info">
-            <div class="label">پزشک</div>
-            <div class="value">دکتر {{ slot.doctor.user.get_full_name }}</div>
-            <div class="label" style="margin-top:12px">تاریخ</div>
+            <div class="label">Doctor</div>
+            <div class="value">Dr. {{ slot.doctor.user.get_full_name }}</div>
+            <div class="label" style="margin-top:12px">Date</div>
             <div class="value">{{ slot.date|date:"Y/m/d" }}</div>
-            <div class="label" style="margin-top:12px">ساعت</div>
-            <div class="value">{{ slot.start_time|time:"H:i" }} تا {{ slot.end_time|time:"H:i" }}</div>
-            <div class="label" style="margin-top:12px">تخصص</div>
+            <div class="label" style="margin-top:12px">Time</div>
+            <div class="value">{{ slot.start_time|time:"H:i" }} to {{ slot.end_time|time:"H:i" }}</div>
+            <div class="label" style="margin-top:12px">Specialty</div>
             <div class="value">{{ slot.doctor.specialty }}</div>
         </div>
-        <a class="cta" href="http://{{ request.get_host }}{% url 'appointments:patient_appointment_list' %}">مشاهده نوبت‌های من</a>
-        <div class="footer">مای‌کلینیک — رزرو نوبت مطب و پیگیری دارو</div>
+        <a class="cta" href="http://{{ request.get_host }}{% url 'appointments:patient_appointment_list' %}">View My Appointments</a>
+        <div class="footer">MyClinic — Doctor appointment booking &amp; medication tracking</div>
     </div>
 </body>
 </html>
