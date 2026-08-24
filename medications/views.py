@@ -490,7 +490,7 @@ class MedicationIntakeActionView(View):
                 intake.recorded_at = timezone.now()
                 intake.save(update_fields=["status", "recorded_at"])
                 from .tasks import handle_intake_taken
-                handle_intake_taken(intake)
+                handle_intake_taken(intake.pk)
             messages.success(request, "Medication intake recorded.")
         elif action == "skipped":
             if intake.status == MedicationIntake.Status.PENDING:
@@ -533,7 +533,7 @@ class MedicationIntakeBatchView(LoginRequiredMixin, View):
             recorded_at=timezone.now(),
         ).order_by("-id")[:updated]:
             from .tasks import handle_intake_taken
-            handle_intake_taken(intake)
+            handle_intake_taken(intake.pk)
             break
 
         return JsonResponse({"updated": updated})
