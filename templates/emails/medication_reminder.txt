@@ -1,12 +1,12 @@
-سلام {{ patient }}،
+Hello {{ patient }},
 
-زمان مصرف داروهای شما برای تاریخ {{ date }} ساعت {{ scheduled_time }} است.
+Medication Time — scheduled for {{ date }} at {{ scheduled_time }}.
 
 {% for intake in intakes %}
 - {{ intake.medication.name }} ({{ intake.medication.dosage|default:"—" }})
-  مصرف شد: {{ site_url }}{% url 'medications:intake_taken' intake.token %}
-  رد شد: {{ site_url }}{% url 'medications:intake_skipped' intake.token %}
+  Taken: {{ site_url }}{% url 'medications:intake_taken' intake.token %}
+  Skipped: {{ site_url }}{% url 'medications:intake_skipped' intake.token %}
 
 {% endfor %}
 
-مای‌کلینیک — رزرو نوبت مطب و پیگیری دارو
+MyClinic — Doctor appointment booking & medication tracking

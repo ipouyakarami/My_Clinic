@@ -60,7 +60,7 @@ def send_reminder_emails():
             html_body = render_to_string("emails/medication_reminder.html", context)
             text_body = render_to_string("emails/medication_reminder.txt", context)
             send_mail(
-                "Medication Reminder — MyClinic",
+                "Medication Time — MyClinic",
                 text_body,
                 None,
                 [email],

@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
@@ -175,10 +176,10 @@ CELERY_BEAT_SCHEDULE = {
     },
     "send-medication-reminders-every-minute": {
         "task": "medications.tasks.send_reminder_emails",
-        "schedule": 60.0,
+        "schedule": crontab(minute="*"),
     },
     "transition-missed-intakes-every-minute": {
         "task": "medications.tasks.transition_missed_intakes",
-        "schedule": 60.0,
+        "schedule": crontab(minute="*"),
     },
 }

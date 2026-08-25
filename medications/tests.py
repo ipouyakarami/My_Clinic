@@ -539,6 +539,61 @@ class EmailFailureHandlingTests(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
 
+class ReminderSchedulePrecisionTests(TestCase):
+    """Assert the reminder query matches past/current intakes exactly, not future ones."""
+
+    def _make_patient(self, email="pat@example.com"):
+        user = User.objects.create_user(
+            email=email, password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="A", last_name="B", is_active=True,
+        )
+        return Patient.objects.create(user=user, phone_number="09121234567")
+
+    def test_intake_in_past_is_matched(self):
+        patient = self._make_patient()
+        med = Medication.objects.create(patient=patient, name="Med", unit="tab")
+        past = timezone.now() - timezone.timedelta(minutes=5)
+        MedicationIntake.objects.create(medication=med, scheduled_time=past, status=MedicationIntake.Status.PENDING)
+
+        due = MedicationIntake.objects.filter(
+            status=MedicationIntake.Status.PENDING, reminder_sent=False, scheduled_time__lte=timezone.now(),
+        )
+        self.assertEqual(due.count(), 1)
+
+    def test_intake_exactly_at_now_is_matched(self):
+        patient = self._make_patient(email="now@example.com")
+        med = Medication.objects.create(patient=patient, name="MedNow", unit="tab")
+        MedicationIntake.objects.create(
+            medication=med, scheduled_time=timezone.now(), status=MedicationIntake.Status.PENDING,
+        )
+
+        due = MedicationIntake.objects.filter(
+            status=MedicationIntake.Status.PENDING, reminder_sent=False, scheduled_time__lte=timezone.now(),
+        )
+        self.assertEqual(due.count(), 1)
+
+    def test_intake_one_minute_in_future_is_not_matched(self):
+        patient = self._make_patient(email="future@example.com")
+        med = Medication.objects.create(patient=patient, name="MedFut", unit="tab")
+        future = timezone.now() + timezone.timedelta(minutes=1)
+        MedicationIntake.objects.create(medication=med, scheduled_time=future, status=MedicationIntake.Status.PENDING)
+
+        due = MedicationIntake.objects.filter(
+            status=MedicationIntake.Status.PENDING, reminder_sent=False, scheduled_time__lte=timezone.now(),
+        )
+        self.assertEqual(due.count(), 0)
+
+    def test_beat_schedule_uses_minute_boundary_crontab(self):
+        """The reminder task must be on a per-minute crontab, not a drifting interval."""
+        from myclinic import settings
+
+        reminder = settings.CELERY_BEAT_SCHEDULE["send-medication-reminders-every-minute"]
+        from celery.schedules import crontab as _crontab
+
+        self.assertIsInstance(reminder["schedule"], _crontab)
+        self.assertEqual(reminder["schedule"].minute, set(range(60)))
+
+
 class DoctorAccessBoundaryTests(TestCase):
     def test_doctor_can_access_patient_meds_via_shared_appointment(self):
         doc_user = User.objects.create_user(
