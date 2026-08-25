@@ -15,6 +15,7 @@ from medical_tests.models import MedicalTestResult
 
 from .forms import GregorianDateField, VisitSummaryForm, WorkingHoursForm
 from .models import Appointment, TimeSlot
+from .services import book_appointment, generate_time_slots, SlotAlreadyBooked
 
 
 class DoctorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -106,33 +107,9 @@ class WorkingHoursCreateView(DoctorRequiredMixin, FormView):
             )
             return self.form_invalid(form)
 
-        existing_slots = TimeSlot.objects.filter(
-            doctor=doctor,
-            date=slot_date,
-            start_time__gte=start_time,
-            start_time__lt=end_time,
+        created, dropped_minutes = generate_time_slots(
+            doctor, slot_date, start_time, end_time
         )
-        existing_starts = set(existing_slots.values_list("start_time", flat=True))
-
-        created = []
-        dropped_minutes = 0
-        current = datetime.datetime.combine(slot_date, start_time)
-        end_dt = datetime.datetime.combine(slot_date, end_time)
-
-        while current + datetime.timedelta(minutes=30) <= end_dt:
-            slot_start = current.time()
-            if slot_start not in existing_starts:
-                slot = TimeSlot.objects.create(
-                    doctor=doctor,
-                    date=slot_date,
-                    start_time=slot_start,
-                    end_time=(current + datetime.timedelta(minutes=30)).time(),
-                )
-                created.append(slot)
-            current += datetime.timedelta(minutes=30)
-
-        if current < end_dt:
-            dropped_minutes = int((end_dt - current).total_seconds() // 60)
 
         now = timezone.now()
         expired_count = self._cleanup_expired_slots(
@@ -173,59 +150,17 @@ class BookAppointmentView(PatientRequiredMixin, FormView):
         context["slot"] = self.get_slot()
         return context
 
-    @transaction.atomic
     def form_valid(self, form):
         slot = self.get_slot()
-        locked = TimeSlot.objects.select_for_update().get(pk=slot.pk)
-        if locked.is_booked:
-            messages.error(self.request, "This slot has just been booked. Please choose another.")
-            return redirect("core:doctor_detail", pk=locked.doctor.pk)
-
         patient = Patient.objects.get(user=self.request.user)
-        appointment = Appointment.objects.create(
-            patient=patient,
-            time_slot=locked,
-            status=Appointment.Status.ACTIVE,
-        )
-        locked.is_booked = True
-        locked.save(update_fields=["is_booked"])
+        try:
+            appointment = book_appointment(slot, patient)
+        except SlotAlreadyBooked:
+            messages.error(self.request, "This slot has just been booked. Please choose another.")
+            return redirect("core:doctor_detail", pk=slot.doctor.pk)
 
         messages.success(self.request, "Your appointment has been booked successfully. A confirmation email has been sent to you.")
-        self._send_confirmation_email(appointment)
         return redirect("appointments:patient_appointment_list")
-
-    def _send_confirmation_email(self, appointment):
-        from django.core.mail import send_mail
-        from django.template.loader import render_to_string
-
-        slot = appointment.time_slot
-        subject = "Appointment Confirmation — MyClinic"
-        body = render_to_string(
-            "emails/appointment_confirmation.txt",
-            {
-                "appointment": appointment,
-                "slot": slot,
-            },
-        )
-        html_body = render_to_string(
-            "emails/appointment_confirmation.html",
-            {
-                "appointment": appointment,
-                "slot": slot,
-            },
-        )
-        try:
-            send_mail(
-                subject,
-                body,
-                None,
-                [appointment.patient.user.email],
-                html_message=html_body,
-                fail_silently=False,
-            )
-        except Exception:
-            pass
-
 
 class PatientAppointmentListView(PatientRequiredMixin, ListView):
     template_name = "appointments/patient_appointment_list.html"

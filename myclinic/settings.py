@@ -153,6 +153,12 @@ else:
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "MyClinic <noreply@myclinic.local>")
 
+
+# Demo/dev-only convenience: password used by the seeded demo accounts and shown
+# on the login page's "Demo accounts" panel. Change via DEMO_PASSWORD env if you
+# re-seed with a different password; the login panel reads the same value.
+DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "demo1234")
+
 # Celery — Redis broker/backend via REDIS_URL
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 CELERY_BROKER_URL = REDIS_URL
