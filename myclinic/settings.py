@@ -153,6 +153,8 @@ else:
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "MyClinic <noreply@myclinic.local>")
 
+# Base URL for building absolute links in emails sent outside a request context
+SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000")
 
 # Demo/dev-only convenience: password used by the seeded demo accounts and shown
 # on the login page's "Demo accounts" panel. Change via DEMO_PASSWORD env if you

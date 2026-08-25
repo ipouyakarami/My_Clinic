@@ -434,3 +434,78 @@ class LogoutTests(TestCase):
         response = self.client.post(reverse("account_logout"))
         self.assertEqual(response.status_code, 302)
         self.assertNotIn("_auth_user_id", self.client.session)
+
+
+class NavBarTests(TestCase):
+    def _activated_patient(self, email="navp@example.com"):
+        self.client.post(
+            reverse("accounts:patient_signup"),
+            {
+                "email": email,
+                "first_name": "پریسا",
+                "last_name": "نوری",
+                "phone_number": "",
+            },
+        )
+        key = ACTIVATION_KEY_RE.search(mail.outbox[-1].body).group(1)
+        self.client.post(
+            reverse("accounts:activate_account", args=[key]),
+            {"password1": STRONG_PASSWORD, "password2": STRONG_PASSWORD},
+        )
+        return User.objects.get(email=email)
+
+    def _doctor_with_password(self, email="navd@example.com"):
+        form = DoctorCreationForm(
+            data={
+                "email": email,
+                "first_name": "علی",
+                "last_name": "رضایی",
+                "specialty": "قلب و عروق",
+                "description": "متخصص قلب با ۱۰ سال سابقه",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        doctor_user = form.save()
+        doctor_user.is_active = True
+        doctor_user.set_password(STRONG_PASSWORD)
+        doctor_user.save()
+        EmailAddress.objects.update_or_create(
+            user=doctor_user,
+            defaults={"email": doctor_user.email, "verified": True, "primary": True},
+        )
+        return doctor_user
+
+    def _login_as(self, email, password):
+        self.client.post(
+            reverse("account_login"),
+            {"login": email, "password": password},
+        )
+
+    def test_logged_out_nav_has_no_role_links(self):
+        response = self.client.get(reverse("core:doctor_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Working Hours")
+        self.assertNotContains(response, "My Appointments")
+        self.assertContains(response, "Doctors")
+        self.assertContains(response, "Log In")
+        self.assertContains(response, "Register")
+
+    def test_doctor_nav_excludes_patient_links(self):
+        user = self._doctor_with_password()
+        self._login_as(user.email, STRONG_PASSWORD)
+        response = self.client.get(reverse("accounts:dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Working Hours")
+        self.assertNotContains(response, "My Appointments")
+        self.assertNotContains(response, "My Tests")
+        self.assertNotContains(response, "Medication Calendar")
+
+    def test_patient_nav_excludes_doctor_links(self):
+        user = self._activated_patient()
+        self._login_as(user.email, STRONG_PASSWORD)
+        response = self.client.get(reverse("accounts:dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "My Appointments")
+        self.assertNotContains(response, "Working Hours")
+        self.assertNotContains(response, "Today&#x27;s Appointments")
+        self.assertNotContains(response, "All Appointments")

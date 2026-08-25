@@ -4,8 +4,8 @@
 
 {% for intake in intakes %}
 - {{ intake.medication.name }} ({{ intake.medication.dosage|default:"—" }})
-  مصرف شد: {{ request.scheme }}://{{ request.get_host }}{% url 'medications:intake_taken' intake.token %}
-  رد شد: {{ request.scheme }}://{{ request.get_host }}{% url 'medications:intake_skipped' intake.token %}
+  مصرف شد: {{ site_url }}{% url 'medications:intake_taken' intake.token %}
+  رد شد: {{ site_url }}{% url 'medications:intake_skipped' intake.token %}
 
 {% endfor %}
 

@@ -29,8 +29,8 @@
             {% for intake in intakes %}
             <div class="intake">
                 <p><strong>{{ intake.medication.name }}</strong> — {{ intake.medication.dosage|default:"—" }}</p>
-                <a href="{{ request.scheme }}://{{ request.get_host }}{% url 'medications:intake_taken' intake.token %}" class="btn btn-taken">Taken</a>
-                <a href="{{ request.scheme }}://{{ request.get_host }}{% url 'medications:intake_skipped' intake.token %}" class="btn btn-skipped">Skipped</a>
+                <a href="{{ site_url }}{% url 'medications:intake_taken' intake.token %}" class="btn btn-taken">Taken</a>
+                <a href="{{ site_url }}{% url 'medications:intake_skipped' intake.token %}" class="btn btn-skipped">Skipped</a>
             </div>
             {% endfor %}
         </div>

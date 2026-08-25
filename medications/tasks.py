@@ -50,18 +50,15 @@ def send_reminder_emails():
     for (email, scheduled_time), intakes in groups.items():
         first = intakes[0]
         try:
-            html_body = render_to_string("emails/medication_reminder.html", {
+            context = {
                 "patient": first.medication.patient.user.get_full_name(),
                 "intakes": intakes,
                 "scheduled_time": scheduled_time.astimezone(tz).strftime("%H:%M"),
                 "date": scheduled_time.astimezone(tz).strftime("%Y/%m/%d"),
-            })
-            text_body = render_to_string("emails/medication_reminder.txt", {
-                "patient": first.medication.patient.user.get_full_name(),
-                "intakes": intakes,
-                "scheduled_time": scheduled_time.astimezone(tz).strftime("%H:%M"),
-                "date": scheduled_time.astimezone(tz).strftime("%Y/%m/%d"),
-            })
+                "site_url": settings.SITE_URL,
+            }
+            html_body = render_to_string("emails/medication_reminder.html", context)
+            text_body = render_to_string("emails/medication_reminder.txt", context)
             send_mail(
                 "Medication Reminder — MyClinic",
                 text_body,

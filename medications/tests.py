@@ -408,6 +408,136 @@ class EmailFailureHandlingTests(TestCase):
         log = EmailFailureLog.objects.first()
         self.assertIn("SMTP error", log.error_message)
 
+    def test_reminder_email_successfully_sent(self):
+        """An intake due now should trigger exactly one reminder email."""
+        from medications import tasks
+
+        user = User.objects.create_user(
+            email="pat@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            first_name="مریم",
+            last_name="صادقی",
+            is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        medication = MedicationIntake.objects.create(
+            medication=Medication.objects.create(patient=patient, name="آسپرین", unit="قرص"),
+            scheduled_time=timezone.now() - timezone.timedelta(minutes=5),
+            status=MedicationIntake.Status.PENDING,
+        )
+
+        tasks.send_reminder_emails()
+
+        medication.refresh_from_db()
+        self.assertTrue(medication.reminder_sent)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("آسپرین", mail.outbox[0].body)
+
+    def test_reminder_sent_for_generated_intakes(self):
+        """Full flow: medication + schedule → generate intakes → reminder email sent."""
+        from medications import tasks
+        from medications.views import _generate_intakes_for_schedule
+
+        user = User.objects.create_user(
+            email="pat@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            first_name="مریم",
+            last_name="صادقی",
+            is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        medication = Medication.objects.create(patient=patient, name="آسپرین", unit="قرص")
+        schedule = MedicationSchedule.objects.create(
+            medication=medication,
+            frequency_type=MedicationSchedule.FrequencyType.DAILY,
+            medication_times=["08:00"],
+        )
+
+        _generate_intakes_for_schedule(schedule)
+
+        due_intake = MedicationIntake.objects.filter(
+            medication=medication,
+            scheduled_time__lte=timezone.now(),
+        ).first()
+        self.assertIsNotNone(due_intake, "No intake was generated with scheduled_time <= now")
+
+        tasks.send_reminder_emails()
+
+        due_intake.refresh_from_db()
+        self.assertTrue(due_intake.reminder_sent)
+        self.assertGreaterEqual(len(mail.outbox), 1)
+
+    def test_reminder_groups_by_patient_and_time(self):
+        """Multiple medications at the same time → one email. Different times → separate emails."""
+        from medications import tasks
+
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        med1 = Medication.objects.create(patient=patient, name="آسپرین", unit="قرص")
+        med2 = Medication.objects.create(patient=patient, name="ایبوپروفن", unit="قرص")
+
+        past = timezone.now() - timezone.timedelta(minutes=5)
+        later = timezone.now() - timezone.timedelta(minutes=10)
+
+        MedicationIntake.objects.create(medication=med1, scheduled_time=past, status=MedicationIntake.Status.PENDING)
+        MedicationIntake.objects.create(medication=med2, scheduled_time=past, status=MedicationIntake.Status.PENDING)
+        MedicationIntake.objects.create(medication=med1, scheduled_time=later, status=MedicationIntake.Status.PENDING)
+
+        tasks.send_reminder_emails()
+
+        self.assertEqual(len(mail.outbox), 2)
+        for intake in MedicationIntake.objects.all():
+            intake.refresh_from_db()
+            self.assertTrue(intake.reminder_sent)
+
+    def test_reminder_not_sent_for_future_intake(self):
+        """An intake scheduled in the future must NOT be emailed."""
+        from medications import tasks
+
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        medication = Medication.objects.create(patient=patient, name="آسپرین", unit="قرص")
+
+        future = timezone.now() + timezone.timedelta(hours=1)
+        intake = MedicationIntake.objects.create(
+            medication=medication, scheduled_time=future, status=MedicationIntake.Status.PENDING
+        )
+
+        tasks.send_reminder_emails()
+
+        self.assertEqual(len(mail.outbox), 0)
+        intake.refresh_from_db()
+        self.assertFalse(intake.reminder_sent)
+
+    def test_reminder_not_resent_for_already_sent(self):
+        """An intake with reminder_sent=True must NOT be re-emailed."""
+        from medications import tasks
+
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        medication = Medication.objects.create(patient=patient, name="آسپرین", unit="قرص")
+
+        past = timezone.now() - timezone.timedelta(minutes=5)
+        intake = MedicationIntake.objects.create(
+            medication=medication, scheduled_time=past, status=MedicationIntake.Status.PENDING,
+            reminder_sent=True,
+        )
+
+        tasks.send_reminder_emails()
+
+        self.assertEqual(len(mail.outbox), 0)
+
 
 class DoctorAccessBoundaryTests(TestCase):
     def test_doctor_can_access_patient_meds_via_shared_appointment(self):
