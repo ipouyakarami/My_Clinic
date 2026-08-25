@@ -21,35 +21,32 @@
                 <p class="mt-2 text-slate-600">See our active doctors and book your appointment</p>
             </div>
 
-            <div class="relative">
-                <div class="hide-scrollbar -mx-4 overflow-x-auto px-4">
-                    <div class="flex gap-5 pb-2">
+            <div class="relative" data-doctor-carousel>
+                <div class="mb-4 flex items-center justify-end gap-2" data-carousel-controls>
+                    <button type="button"
+                            class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
+                            aria-label="Previous doctors"
+                            data-carousel-prev>
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                        </svg>
+                    </button>
+                    <button type="button"
+                            class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
+                            aria-label="Next doctors"
+                            data-carousel-next>
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="hide-scrollbar overflow-x-auto scroll-smooth snap-x snap-mandatory px-2" data-carousel-viewport>
+                    <div class="flex gap-5 pb-2" data-carousel-track>
                         {% for doctor in featured_doctors %}
-                            <a href="{% url 'core:doctor_detail' doctor.pk %}"
-                               class="group w-72 shrink-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                                <div class="flex items-center gap-4">
-                                    {% if doctor.profile_picture %}
-                                        <img src="{{ doctor.profile_picture.url }}" alt="{{ doctor.user.get_full_name }}"
-                                             class="h-14 w-14 shrink-0 rounded-full object-cover">
-                                    {% else %}
-                                        <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
-                                            {{ doctor.user.first_name|slice:":1"|default:"D" }}
-                                        </span>
-                                    {% endif %}
-                                    <div class="min-w-0">
-                                        <h3 class="truncate font-bold text-black group-hover:text-primary">
-                                            Dr. {{ doctor.user.get_full_name }}
-                                        </h3>
-                                        <p class="mt-1 truncate text-sm text-primary">{{ doctor.specialty }}</p>
-                                    </div>
-                                </div>
-                                <p class="mt-4 line-clamp-2 text-sm leading-relaxed text-slate-500">
-                                    {{ doctor.description }}
-                                </p>
-                                <p class="mt-4 text-sm font-semibold text-primary group-hover:text-primary/80">
-                                    View Profile
-                                </p>
-                            </a>
+                            <div class="w-72 shrink-0 snap-start" data-carousel-item>
+                                {% include "core/_doctor_card.html" with doctor=doctor %}
+                            </div>
                         {% endfor %}
                     </div>
                 </div>

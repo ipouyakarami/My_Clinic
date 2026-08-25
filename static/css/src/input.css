@@ -4,9 +4,19 @@
 @source "../../../accounts/templates/";
 @source "../../../appointments/templates/";
 @source "../../../medications/templates/";
+@source "../../../core/templates/";
 
 @theme {
     --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --color-primary: #4e598c;
     --color-accent: #f9c784;
+}
+
+@utility hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
 }

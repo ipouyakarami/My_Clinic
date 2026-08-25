@@ -1,0 +1,28 @@
+{% load static %}
+
+<a href="{% url 'core:doctor_detail' doctor.pk %}"
+   class="group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <div class="flex items-center gap-4">
+        {% if doctor.profile_picture %}
+            <img src="{{ doctor.profile_picture.url }}"
+                 alt="Dr. {{ doctor.user.get_full_name }}"
+                 class="h-14 w-14 shrink-0 rounded-full object-cover">
+        {% else %}
+            <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
+                {{ doctor.user.first_name|slice:":1"|default:"D" }}
+            </span>
+        {% endif %}
+        <div class="min-w-0">
+            <h3 class="truncate font-bold text-black group-hover:text-primary">
+                Dr. {{ doctor.user.get_full_name }}
+            </h3>
+            <p class="mt-1 truncate text-sm text-primary">{{ doctor.specialty }}</p>
+        </div>
+    </div>
+    <p class="mt-4 line-clamp-2 min-h-10 flex-1 text-sm leading-relaxed text-slate-500">
+        {{ doctor.description }}
+    </p>
+    <span class="mt-4 inline-flex items-center text-sm font-semibold text-primary group-hover:text-primary/80">
+        Book Appointment
+    </span>
+</a>
