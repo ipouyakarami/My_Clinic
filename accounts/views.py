@@ -13,6 +13,8 @@ from allauth.account.views import LoginView as AllauthLoginView
 
 from medications.models import Medication, MedicationIntake
 
+from appointments.models import Appointment
+
 from .forms import PatientSignupForm, SetPasswordForm
 from .models import Doctor, Patient
 from .services import activate_account, create_patient_with_profile, send_activation_email
@@ -156,30 +158,90 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.request.user.user_type == "patient":
+        user = self.request.user
+        now = timezone.now()
+        today = now.date()
+
+        if user.user_type == "patient":
             from accounts.models import Patient
-            patient = Patient.objects.get(user=self.request.user)
-            today = timezone.now().date()
+
+            patient = Patient.objects.get(user=user)
+
+            upcoming_appointments = (
+                patient.appointments.filter(
+                    status=Appointment.Status.ACTIVE,
+                    time_slot__date__gte=today,
+                )
+                .select_related("time_slot", "time_slot__doctor", "time_slot__doctor__user")
+                .order_by("time_slot__date", "time_slot__start_time")[:5]
+            )
+
             start_dt = timezone.make_aware(
                 timezone.datetime.combine(today, timezone.datetime.min.time()),
                 timezone.get_current_timezone(),
             )
             end_dt = start_dt + timezone.timedelta(days=1)
-            today_intakes = MedicationIntake.objects.filter(
-                medication__patient=patient,
-                scheduled_time__gte=start_dt,
-                scheduled_time__lt=end_dt,
-            ).select_related("medication").order_by("scheduled_time")
+            today_intakes = (
+                MedicationIntake.objects.filter(
+                    medication__patient=patient,
+                    scheduled_time__gte=start_dt,
+                    scheduled_time__lt=end_dt,
+                )
+                .select_related("medication")
+                .order_by("scheduled_time")
+            )
             groups = {}
             for intake in today_intakes:
                 key = intake.scheduled_time
                 groups.setdefault(key, []).append(intake)
+
+            context["upcoming_appointments"] = upcoming_appointments
             context["today_medication_groups"] = list(groups.items())
-            context["upcoming_appointments_count"] = 0
-            context["active_medications_count"] = MedicationIntake.objects.filter(
-                medication__patient=patient,
-                medication__is_active=True,
-                status=MedicationIntake.Status.PENDING,
-                scheduled_time__gte=timezone.now(),
-            ).values("medication").distinct().count()
+            context["active_medications_count"] = (
+                Medication.objects.filter(patient=patient, is_active=True).count()
+            )
+            context["tests_count"] = user.medical_tests.count()
+
+        elif user.user_type == "doctor":
+            from accounts.models import Doctor
+
+            doctor = Doctor.objects.get(user=user)
+
+            start_dt = timezone.make_aware(
+                timezone.datetime.combine(today, timezone.datetime.min.time()),
+                timezone.get_current_timezone(),
+            )
+            end_dt = start_dt + timezone.timedelta(days=1)
+            todays_appointments = (
+                Appointment.objects.filter(
+                    time_slot__doctor=doctor,
+                    time_slot__date=today,
+                    status=Appointment.Status.ACTIVE,
+                )
+                .select_related("patient", "patient__user", "time_slot")
+                .order_by("time_slot__start_time")
+            )
+
+            context["todays_appointments"] = todays_appointments
+            context["today_total"] = todays_appointments.count()
+            context["today_completed"] = Appointment.objects.filter(
+                time_slot__doctor=doctor,
+                time_slot__date=today,
+                status=Appointment.Status.COMPLETED,
+            ).count()
+            context["upcoming_count"] = Appointment.objects.filter(
+                time_slot__doctor=doctor,
+                time_slot__date__gt=today,
+                status=Appointment.Status.ACTIVE,
+            ).count()
+            context["patients_seen"] = (
+                Appointment.objects.filter(
+                    time_slot__doctor=doctor,
+                    status=Appointment.Status.COMPLETED,
+                )
+                .values("patient")
+                .distinct()
+                .count()
+            )
+
         return context

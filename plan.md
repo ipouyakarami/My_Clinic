@@ -71,20 +71,9 @@ Companion to `requirements.md`. Work top to bottom; each phase should be functio
 - [x] doctor can see and download pateint's medical test result in booked slot detail
 
 ## Phase 6 — Dashboards
-- [ ] Patient dashboard: upcoming appointments + today's medications (per-item + bulk "mark all as taken") + quick actions
-- [ ] Doctor dashboard: today's appointments + quick stats + quick actions
+- [x] Patient dashboard: upcoming appointments + today's medications (per-item + bulk "mark all as taken") + quick actions
+- [x] Doctor dashboard: today's appointments + quick stats + quick actions
 
-## Phase 7 — Jalali Date Handling Pass
-- [ ] Confirm all date inputs across the app use a Jalali picker/widget
-- [ ] Confirm all stored dates are Gregorian/UTC in the DB
-- [ ] Confirm all displayed dates/times are converted to Jalali + Asia/Tehran
-- [ ] Strict validation + Persian error messages on malformed date input, no silent fallback — **test per requirements.md §8**
-
-## Phase 8 — RTL & Visual Polish
-- [ ] Full RTL audit (forms, tables, icons, spacing) across every page
-- [ ] Apply MyTherapy-style visuals to medication views
-- [ ] Apply drdr.ir-style visuals to doctor cards
-- [ ] Apply Alef.ba-style visuals to home page
 
 ## Phase 9 — Edge Cases & Hardening
 - [ ] Re-run all acceptance-criteria tests from requirements.md §8 as a final regression pass

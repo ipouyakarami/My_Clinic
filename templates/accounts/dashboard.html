@@ -7,25 +7,107 @@
         <h1 class="mb-6 text-2xl font-bold text-slate-900">
             Doctor Dashboard — Dr. {{ user.get_full_name }}
         </h1>
-        <p class="text-slate-500">Today's appointments and clinic stats will be completed in Phase 6.</p>
+
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+            <div class="rounded-3xl border border-slate-200 bg-white p-5">
+                <p class="text-sm text-slate-500">Today's Appointments</p>
+                <p class="text-3xl font-bold text-primary">{{ today_total }}</p>
+            </div>
+            <div class="rounded-3xl border border-slate-200 bg-white p-5">
+                <p class="text-sm text-slate-500">Completed Today</p>
+                <p class="text-3xl font-bold text-primary">{{ today_completed }}</p>
+            </div>
+            <div class="rounded-3xl border border-slate-200 bg-white p-5">
+                <p class="text-sm text-slate-500">Upcoming</p>
+                <p class="text-3xl font-bold text-primary">{{ upcoming_count }}</p>
+            </div>
+            <div class="rounded-3xl border border-slate-200 bg-white p-5">
+                <p class="text-sm text-slate-500">Patients Seen</p>
+                <p class="text-3xl font-bold text-primary">{{ patients_seen }}</p>
+            </div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-slate-900">Today's Appointments</h2>
+                <a href="{% url 'appointments:doctor_today_appointments' %}" class="text-sm text-primary hover:underline">View All</a>
+            </div>
+            {% if todays_appointments %}
+                <div class="space-y-3">
+                    {% for appointment in todays_appointments %}
+                        <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <div>
+                                <p class="font-medium text-slate-900">{{ appointment.patient.user.get_full_name }}</p>
+                                <p class="text-sm text-slate-500">{{ appointment.time_slot.start_time|time:"H:i" }}{% if appointment.time_slot.end_time %} &ndash; {{ appointment.time_slot.end_time|time:"H:i" }}{% endif %}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="rounded-lg bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary/90">Details</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-slate-500">No appointments scheduled for today.</p>
+            {% endif %}
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-3">
+            <a href="{% url 'appointments:working_hours_create' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-center transition hover:border-primary hover:shadow-sm">
+                <p class="font-semibold text-slate-900">Working Hours</p>
+                <p class="mt-1 text-sm text-slate-500">Define your availability</p>
+            </a>
+            <a href="{% url 'appointments:doctor_appointment_list' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-center transition hover:border-primary hover:shadow-sm">
+                <p class="font-semibold text-slate-900">All Appointments</p>
+                <p class="mt-1 text-sm text-slate-500">View your schedule</p>
+            </a>
+            <a href="{% url 'appointments:doctor_today_appointments' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-center transition hover:border-primary hover:shadow-sm">
+                <p class="font-semibold text-slate-900">Today's Appointments</p>
+                <p class="mt-1 text-sm text-slate-500">See today's patients</p>
+            </a>
+        </div>
+
     {% else %}
         <h1 class="mb-6 text-2xl font-bold text-slate-900">
             Patient Dashboard — {{ user.get_full_name }}
         </h1>
 
-        <div class="grid gap-6 lg:grid-cols-3 mb-8">
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
             <div class="rounded-3xl border border-slate-200 bg-white p-5">
                 <p class="text-sm text-slate-500">Upcoming Appointments</p>
-                <p class="text-3xl font-bold text-primary">{{ upcoming_appointments_count }}</p>
+                <p class="text-3xl font-bold text-primary">{{ upcoming_appointments|length }}</p>
             </div>
             <div class="rounded-3xl border border-slate-200 bg-white p-5">
                 <p class="text-sm text-slate-500">Active Medications</p>
                 <p class="text-3xl font-bold text-primary">{{ active_medications_count }}</p>
             </div>
             <div class="rounded-3xl border border-slate-200 bg-white p-5">
-                <p class="text-sm text-slate-500">Tests</p>
-                <p class="text-3xl font-bold text-primary">0</p>
+                <p class="text-sm text-slate-500">Test Results</p>
+                <p class="text-3xl font-bold text-primary">{{ tests_count }}</p>
             </div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-slate-900">Upcoming Appointments</h2>
+                <a href="{% url 'appointments:patient_appointment_list' %}" class="text-sm text-primary hover:underline">View All</a>
+            </div>
+            {% if upcoming_appointments %}
+                <div class="space-y-3">
+                    {% for appointment in upcoming_appointments %}
+                        <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <div>
+                                <p class="font-medium text-slate-900">Dr. {{ appointment.time_slot.doctor.user.get_full_name }}</p>
+                                <p class="text-sm text-slate-500">
+                                    {{ appointment.time_slot.date|date:"M j, Y" }} at {{ appointment.time_slot.start_time|time:"H:i" }}
+                                </p>
+                            </div>
+                            <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-800">{{ appointment.get_status_display }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-slate-500">No upcoming appointments.</p>
+            {% endif %}
         </div>
 
         <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 mb-8">
@@ -46,7 +128,7 @@
                                 <div class="flex items-center justify-between rounded-xl bg-white p-3">
                                     <div>
                                         <p class="font-medium text-slate-900">{{ intake.medication.name }}</p>
-                                        <p class="text-sm text-slate-500">{{ intake.medication.dosage|default:"—" }}</p>
+                                        <p class="text-sm text-slate-500">{{ intake.medication.dosage|default:"&mdash;" }}</p>
                                     </div>
                                     <div class="flex gap-2">
                                         {% if intake.status == 'pending' %}
@@ -73,11 +155,18 @@
             </div>
         </div>
 
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
-            <h2 class="mb-4 text-lg font-bold text-slate-900">Recent Tests</h2>
-            <p class="text-slate-500">You haven't uploaded any tests yet.</p>
-            <a href="{% url 'medical_tests:medical_test_add' %}" class="mt-4 inline-block rounded-lg bg-primary px-5 py-2.5 text-white hover:bg-primary/90">
-                Upload Test
+        <div class="grid gap-4 sm:grid-cols-3">
+            <a href="{% url 'core:doctor_list' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-center transition hover:border-primary hover:shadow-sm">
+                <p class="font-semibold text-slate-900">Book Appointment</p>
+                <p class="mt-1 text-sm text-slate-500">Find a doctor</p>
+            </a>
+            <a href="{% url 'medications:medication_add' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-center transition hover:border-primary hover:shadow-sm">
+                <p class="font-semibold text-slate-900">Add Medication</p>
+                <p class="mt-1 text-sm text-slate-500">Track your doses</p>
+            </a>
+            <a href="{% url 'medical_tests:medical_test_add' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-center transition hover:border-primary hover:shadow-sm">
+                <p class="font-semibold text-slate-900">Upload Test</p>
+                <p class="mt-1 text-sm text-slate-500">Add test results</p>
             </a>
         </div>
     {% endif %}
