@@ -355,7 +355,7 @@ class MedicationWizardView(PatientRequiredMixin, View):
 
         form_class = self._get_step_form_class(step)
         form = None
-        if form_class and session_data:
+        if form_class:
             initial = self._build_initial_for_step(step, session_data)
             form = form_class(initial=initial, data=None)
 

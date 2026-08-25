@@ -9,6 +9,29 @@ from django.utils.translation import gettext_lazy as _
 from accounts.models import Patient
 
 
+UNIT_CHOICES = [
+    ("tablet", _("Tablet")),
+    ("capsule", _("Capsule")),
+    ("pill", _("Pill")),
+    ("sachet", _("Sachet")),
+    ("packet", _("Packet")),
+    ("bottle", _("Bottle")),
+    ("vial", _("Vial")),
+    ("ampoule", _("Ampoule")),
+    ("tube", _("Tube")),
+    ("drop", _("Drop")),
+    ("spray", _("Spray")),
+    ("patch", _("Patch")),
+    ("suppository", _("Suppository")),
+    ("dose", _("Dose")),
+    ("ml", _("mL")),
+    ("mg", _("mg")),
+    ("g", _("g")),
+    ("mcg", _("mcg")),
+    ("unit", _("Unit")),
+]
+
+
 class Medication(models.Model):
     patient = models.ForeignKey(
         Patient,
@@ -17,7 +40,7 @@ class Medication(models.Model):
         verbose_name=_("patient"),
     )
     name = models.CharField(_("medication name"), max_length=200)
-    unit = models.CharField(_("unit"), max_length=100)
+    unit = models.CharField(_("unit"), max_length=100, choices=UNIT_CHOICES)
     dosage = models.CharField(_("dosage"), max_length=200, default="")
     current_inventory = models.IntegerField(_("current inventory"), default=0)
     refill_reminder_threshold = models.IntegerField(

@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from accounts.models import Patient, Doctor, User
 from appointments.forms import GregorianDateField
 
-from .models import Medication, MedicationSchedule, MedicationIntake
+from .models import Medication, MedicationSchedule, MedicationIntake, UNIT_CHOICES
 
 
 FREQUENCY_CHOICES = MedicationSchedule.FrequencyType.choices
@@ -22,7 +22,17 @@ WEEKDAY_CHOICES = [
 
 class MedicationStep1Form(forms.Form):
     name = forms.CharField(label=_("Medication Name"), max_length=200)
-    unit = forms.CharField(label=_("Unit"), max_length=100)
+    unit = forms.ChoiceField(
+        label=_("Unit"),
+        choices=UNIT_CHOICES,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        initial = self.initial.get("unit")
+        if initial and initial not in dict(UNIT_CHOICES):
+            self.fields["unit"].choices = [(initial, f"{initial} (legacy)")] + list(UNIT_CHOICES)
 
 
 class MedicationStep2Form(forms.Form):

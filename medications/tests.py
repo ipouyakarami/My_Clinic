@@ -654,7 +654,7 @@ class DoctorAccessBoundaryTests(TestCase):
 
         session = self.client.session
         session["medication_wizard_%d" % doc_user.id] = {
-            "name": "آسپرین", "unit": "قرص", "frequency_type": "daily",
+            "name": "آسپرین", "unit": "tablet", "frequency_type": "daily",
             "medication_times": ["08:00"], "current_inventory": 30,
             "refill_reminder_threshold": 5, "start_date": "", "end_date": "",
         }
@@ -687,7 +687,7 @@ class DoctorAccessBoundaryTests(TestCase):
 
         session = self.client.session
         session["medication_wizard_%d" % doc_user.id] = {
-            "medication_pk": med.pk, "name": "ایبوپروفن", "unit": "قرص",
+            "medication_pk": med.pk, "name": "ایبوپروفن", "unit": "tablet",
             "dosage": "۲ قرص", "frequency_type": "daily",
             "medication_times": ["08:00"], "current_inventory": 20,
             "refill_reminder_threshold": 5, "start_date": "", "end_date": "",
@@ -717,7 +717,7 @@ class DoctorAccessBoundaryTests(TestCase):
 
         session = self.client.session
         session["medication_wizard_%d" % doc_user.id] = {
-            "name": "آسپرین", "unit": "قرص", "frequency_type": "daily",
+            "name": "آسپرین", "unit": "tablet", "frequency_type": "daily",
             "medication_times": ["08:00"], "current_inventory": 30,
             "refill_reminder_threshold": 5, "start_date": "", "end_date": "",
         }
@@ -725,7 +725,7 @@ class DoctorAccessBoundaryTests(TestCase):
 
         response = self.client.post(
             reverse("medications:doctor_medication_add", args=[appointment.pk]),
-            {"step": "1", "name": "آسپرین", "unit": "قرص"},
+            {"step": "1", "name": "آسپرین", "unit": "tablet"},
         )
         self.assertEqual(response.status_code, 302)
         self.assertIn(
@@ -740,7 +740,7 @@ class DoctorAccessBoundaryTests(TestCase):
 
         session = self.client.session
         session["medication_wizard_%d" % doc_user.id] = {
-            "name": "آسپرین", "unit": "قرص", "frequency_type": "daily",
+            "name": "آسپرین", "unit": "tablet", "frequency_type": "daily",
             "medication_times": ["08:00"], "current_inventory": 30,
             "refill_reminder_threshold": 5, "start_date": "", "end_date": "",
         }
@@ -775,7 +775,7 @@ class MedicationViewTests(TestCase):
             {
                 "step": "1",
                 "name": "آسپرین",
-                "unit": "قرص",
+                "unit": "tablet",
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -864,6 +864,157 @@ class MedicationViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Edit Medication")
 
+    def test_step1_visible_on_fresh_load(self):
+        """Bug 1 regression: step 1 inputs must be visible on fresh page load without clicking Next."""
+        user = User.objects.create_user(
+            email="pat@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            first_name="Maryam",
+            last_name="S",
+            is_active=True,
+        )
+        Patient.objects.create(user=user, phone_number="09121234567")
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("medications:medication_add"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertIn('name="name"', content)
+        self.assertIn('name="unit"', content)
+        self.assertIn("<select", content)
+
+    def test_step1_visible_on_validation_error_reload(self):
+        """Bug 1 regression: step 1 must remain visible when returning due to a validation error."""
+        user = User.objects.create_user(
+            email="pat@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            first_name="Maryam",
+            last_name="S",
+            is_active=True,
+        )
+        Patient.objects.create(user=user, phone_number="09121234567")
+        self.client.force_login(user)
+
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "1", "name": "", "unit": ""},
+        )
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertIn('name="name"', content)
+        self.assertIn('name="unit"', content)
+
+    def test_step1_edit_flow_visible_on_load(self):
+        """Bug 1 regression: edit flow must also show step 1 immediately on load."""
+        user = User.objects.create_user(
+            email="pat@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            first_name="Maryam",
+            last_name="S",
+            is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        self.client.force_login(user)
+
+        medication = Medication.objects.create(
+            patient=patient, name="Aspirin", unit="tablet", dosage="1 tablet",
+            current_inventory=10,
+        )
+
+        response = self.client.get(reverse("medications:medication_edit", args=[medication.pk]))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertIn('name="name"', content)
+        self.assertIn('name="unit"', content)
+        self.assertIn("<select", content)
+        self.assertIn("Aspirin", content)
+
+    def test_unit_dropdown_has_all_choices(self):
+        """Bug 2: unit field must render as a <select> with all 19 choices in order."""
+        user = User.objects.create_user(
+            email="pat@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            first_name="Maryam",
+            last_name="S",
+            is_active=True,
+        )
+        Patient.objects.create(user=user, phone_number="09121234567")
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("medications:medication_add"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+
+        expected_units = [
+            "tablet", "capsule", "pill", "sachet", "packet", "bottle", "vial",
+            "ampoule", "tube", "drop", "spray", "patch", "suppository", "dose",
+            "ml", "mg", "g", "mcg", "unit",
+        ]
+        for unit_value in expected_units:
+            self.assertIn(f'value="{unit_value}"', content)
+
+    def test_legacy_unit_value_shows_in_edit_dropdown(self):
+        """Bug 2: medication with a legacy free-text unit must not crash edit page."""
+        user = User.objects.create_user(
+            email="pat@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            first_name="Maryam",
+            last_name="S",
+            is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        self.client.force_login(user)
+
+        medication = Medication.objects.create(
+            patient=patient, name="Old Med", unit="قرص", dosage="1",
+            current_inventory=10,
+        )
+
+        response = self.client.get(reverse("medications:medication_edit", args=[medication.pk]))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertIn("قرص", content)
+
+    def test_submit_valid_unit_saves_correctly(self):
+        """Bug 2: submitting with a valid unit choice saves and displays correctly."""
+        user = User.objects.create_user(
+            email="pat@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            first_name="Maryam",
+            last_name="S",
+            is_active=True,
+        )
+        Patient.objects.create(user=user, phone_number="09121234567")
+        self.client.force_login(user)
+
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "1", "name": "Aspirin", "unit": "tablet"},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
+        self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/08/25"},
+        )
+        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "1 tablet"})
+        self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "5", "current_inventory": 10, "refill_reminder_threshold": 5},
+        )
+        response = self.client.post(reverse("medications:medication_add"), {"step": "6"})
+        self.assertEqual(response.status_code, 302)
+
+        medication = Medication.objects.get(name="Aspirin")
+        self.assertEqual(medication.unit, "tablet")
+
     def test_step3_daily_shows_correct_fields(self):
         user = User.objects.create_user(
             email="pat@example.com",
@@ -876,7 +1027,7 @@ class MedicationViewTests(TestCase):
         Patient.objects.create(user=user, phone_number="09121234567")
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
 
         response = self.client.get(reverse("medications:medication_add") + "?step=3")
@@ -900,7 +1051,7 @@ class MedicationViewTests(TestCase):
         Patient.objects.create(user=user, phone_number="09121234567")
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
 
         test_cases = [
             ("daily", "daily-fields"),
@@ -960,7 +1111,7 @@ class MedicationViewTests(TestCase):
         Patient.objects.create(user=user, phone_number="09121234567")
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "specific_days"})
 
         response = self.client.get(reverse("medications:medication_add") + "?step=3")
@@ -983,7 +1134,7 @@ class MedicationViewTests(TestCase):
         Patient.objects.create(user=user, phone_number="09121234567")
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "every_n_days"})
 
         response = self.client.get(reverse("medications:medication_add") + "?step=3")
@@ -1003,7 +1154,7 @@ class MedicationViewTests(TestCase):
         Patient.objects.create(user=user, phone_number="09121234567")
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "every_x_hours"})
 
         response = self.client.get(reverse("medications:medication_add") + "?step=3")
@@ -1025,7 +1176,7 @@ class MedicationViewTests(TestCase):
         Patient.objects.create(user=user, phone_number="09121234567")
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "specific_days"})
 
         response = self.client.post(
@@ -1052,7 +1203,7 @@ class MedicationViewTests(TestCase):
         Patient.objects.create(user=user, phone_number="09121234567")
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
 
         response = self.client.post(
@@ -1111,7 +1262,7 @@ class MedicationViewTests(TestCase):
         Patient.objects.create(user=user, phone_number="09121234567")
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "every_x_hours"})
 
         response = self.client.post(
@@ -1150,7 +1301,7 @@ class MedicationViewTests(TestCase):
         Patient.objects.create(user=user, phone_number="09121234567")
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
         self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00\n20:00", "start_date": "2026/08/25"})
         self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
@@ -1180,7 +1331,7 @@ class MedicationViewTests(TestCase):
         Patient.objects.create(user=user, phone_number="09121234567")
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "every_x_hours"})
         self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "every_x_hours", "anchor_date": "2026/08/25", "anchor_time": "08:00", "x_hours_interval": 4})
         self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
@@ -1208,7 +1359,7 @@ class MedicationViewTests(TestCase):
         Patient.objects.create(user=user, phone_number="09121234567")
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "specific_days"})
         self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "specific_days", "specific_days": ["sat", "mon"], "medication_times_specific": "08:00", "start_date_specific": "2026/08/25"})
         self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
@@ -1234,7 +1385,7 @@ class MedicationViewTests(TestCase):
         Patient.objects.create(user=user, phone_number="09121234567")
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
         self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/08/25"})
         self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
@@ -1757,7 +1908,7 @@ class GregorianDateRoundTripTests(TestCase):
         self.client.force_login(user)
         import datetime as dt_module
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
         self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/08/25"})
         self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
@@ -1773,7 +1924,7 @@ class GregorianDateRoundTripTests(TestCase):
         self.client.force_login(user)
         import datetime as dt_module
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
         self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/08/25", "end_date": "2026/09/25"})
         self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
@@ -1789,7 +1940,7 @@ class GregorianDateRoundTripTests(TestCase):
         self.client.force_login(user)
         import datetime as dt_module
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "every_x_hours"})
         self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "every_x_hours", "anchor_date": "2026/08/25", "anchor_time": "08:30", "x_hours_interval": 4})
         self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
@@ -1808,7 +1959,7 @@ class GregorianDateRoundTripTests(TestCase):
         patient, user = self._create_patient()
         self.client.force_login(user)
 
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
         self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/08/25"})
         self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
