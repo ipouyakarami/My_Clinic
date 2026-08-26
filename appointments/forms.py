@@ -6,9 +6,10 @@ from accounts.models import Doctor, Patient, User
 
 
 class GregorianDateField(forms.Field):
-    def __init__(self, **kwargs):
+    def __init__(self, *args, allow_past=False, **kwargs):
+        self.allow_past = allow_past
         kwargs.setdefault("widget", forms.TextInput(attrs={"placeholder": "YYYY/MM/DD"}))
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
 
     def clean(self, value):
         value = super().clean(value)
@@ -22,7 +23,7 @@ class GregorianDateField(forms.Field):
             year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
             from datetime import date
             result = date(year, month, day)
-            if result < timezone.now().date():
+            if not self.allow_past and result < timezone.now().date():
                 raise ValidationError("Date cannot be in the past.")
             return result
         except (ValueError, TypeError) as exc:

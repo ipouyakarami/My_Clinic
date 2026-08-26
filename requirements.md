@@ -39,7 +39,7 @@ These were not fully specified in the source requirements. Reasonable defaults a
 | Backend + Frontend | Django (server-side rendered templates) |
 | Auth | django-allauth integrated with a custom `AbstractBaseUser` model, email as `USERNAME_FIELD` |
 | Database | PostgreSQL |
-| Background jobs / scheduling | Celery + Redis (Celery Beat for periodic tasks) |
+| Background jobs / scheduling | Celery + Celery Beat, broker & result backend over PostgreSQL via Kombu's SQLAlchemy transport (no separate Redis service) |
 | Email | Gmail SMTP — credentials must be supplied via environment variables (`EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`), never committed to source control |
 | File storage | Local filesystem (PDFs, profile pictures) |
 | Dates | Gregorian `DateField`/`DateTimeField` in the DB, stored in UTC internally, rendered in `Asia/Tehran`; no calendar conversion — Gregorian throughout |
@@ -52,7 +52,6 @@ These were not fully specified in the source requirements. Reasonable defaults a
 ```
 DJANGO_SECRET_KEY=
 DATABASE_URL=
-REDIS_URL=
 EMAIL_HOST_USER=
 EMAIL_HOST_PASSWORD=
 DEFAULT_FROM_EMAIL=

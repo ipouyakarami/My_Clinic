@@ -162,10 +162,17 @@ SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000")
 # re-seed with a different password; the login panel reads the same value.
 DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "demo1234")
 
-# Celery — Redis broker/backend via REDIS_URL
-REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
+# Celery — broker + result backend over PostgreSQL via Kombu's SQLAlchemy
+# transport. No separate Redis service: the same DATABASE_URL that backs the
+# app's data also queues tasks and stores results, using the sqla+/db+ scheme
+# prefixes. (No task in this project reads results, so the backend is
+# capability parity, not load-bearing.)
+# dj_database_url emits the legacy "postgres://" scheme; SQLAlchemy requires
+# "postgresql://" and, since this project uses psycopg (v3) not psycopg2, the
+# dialect must be "postgresql+psycopg://".
+_sqla_db_url = os.environ["DATABASE_URL"].replace("postgres://", "postgresql+psycopg://", 1).replace("postgresql://", "postgresql+psycopg://", 1)
+CELERY_BROKER_URL = f"sqla+{_sqla_db_url}"
+CELERY_RESULT_BACKEND = f"db+{_sqla_db_url}"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ALWAYS_EAGER = False
 

@@ -70,6 +70,7 @@ class MedicationStep3Form(forms.Form):
     anchor_date = GregorianDateField(
         label=_("Anchor Date"),
         required=False,
+        allow_past=True,
         widget=forms.TextInput(attrs={"class": "calendar-picker"}),
     )
     anchor_time = forms.CharField(
@@ -80,42 +81,68 @@ class MedicationStep3Form(forms.Form):
     start_date = GregorianDateField(
         label=_("Start Date"),
         required=False,
+        allow_past=True,
         widget=forms.TextInput(attrs={"class": "calendar-picker"}),
     )
     start_date_specific = GregorianDateField(
         label=_("Start Date"),
         required=False,
+        allow_past=True,
         widget=forms.TextInput(attrs={"class": "calendar-picker"}),
     )
     start_date_n = GregorianDateField(
         label=_("Start Date"),
         required=False,
+        allow_past=True,
         widget=forms.TextInput(attrs={"class": "calendar-picker"}),
     )
     end_date = GregorianDateField(
         label=_("End Date"),
         required=False,
+        allow_past=True,
         widget=forms.TextInput(attrs={"class": "calendar-picker"}),
     )
     end_date_specific = GregorianDateField(
         label=_("End Date"),
         required=False,
+        allow_past=True,
         widget=forms.TextInput(attrs={"class": "calendar-picker"}),
     )
     end_date_n = GregorianDateField(
         label=_("End Date"),
         required=False,
+        allow_past=True,
         widget=forms.TextInput(attrs={"class": "calendar-picker"}),
     )
     end_date_x = GregorianDateField(
         label=_("End Date"),
         required=False,
+        allow_past=True,
         widget=forms.TextInput(attrs={"class": "calendar-picker"}),
     )
+
+    _ACTIVE_DATE_FIELDS = {
+        "daily": {"start_date", "end_date"},
+        "specific_days": {"start_date_specific", "end_date_specific"},
+        "every_n_days": {"start_date_n", "end_date_n"},
+        "every_x_hours": {"anchor_date", "end_date_x"},
+    }
+    _ALL_DATE_FIELDS = [
+        "start_date", "start_date_specific", "start_date_n",
+        "end_date", "end_date_specific", "end_date_n", "end_date_x",
+        "anchor_date",
+    ]
 
     def clean(self):
         cleaned = super().clean()
         freq = self.data.get("frequency_type")
+
+        active = self._ACTIVE_DATE_FIELDS.get(freq, set())
+        for field_name in self._ALL_DATE_FIELDS:
+            if field_name not in active:
+                cleaned.pop(field_name, None)
+                if self._errors is not None and field_name in self._errors:
+                    del self._errors[field_name]
 
         if freq == "daily":
             times = self._parse_times(cleaned.get("medication_times"))

@@ -1246,6 +1246,139 @@ class MedicationViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
 
+    def test_step3_advances_to_step4_for_all_frequency_types(self):
+        """Step 3 must advance to step 4 for every frequency type, using a
+        date that is not in the past so the GregorianDateField accepts it."""
+        user = User.objects.create_user(
+            email="pat@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            first_name="مریم",
+            last_name="صادقی",
+            is_active=True,
+        )
+        Patient.objects.create(user=user, phone_number="09121234567")
+        self.client.force_login(user)
+
+        future_date = (timezone.now().date() + datetime.timedelta(days=7)).strftime("%Y/%m/%d")
+
+        cases = {
+            "daily": {"frequency_type": "daily", "medication_times": "08:00\n20:00", "start_date": future_date},
+            "specific_days": {
+                "frequency_type": "specific_days",
+                "specific_days": ["sat", "mon"],
+                "medication_times_specific": "08:00",
+                "start_date_specific": future_date,
+            },
+            "every_n_days": {
+                "frequency_type": "every_n_days",
+                "n_days_interval": 2,
+                "medication_times_n": "08:00",
+                "start_date_n": future_date,
+            },
+            "every_x_hours": {
+                "frequency_type": "every_x_hours",
+                "x_hours_interval": 4,
+                "anchor_date": future_date,
+                "anchor_time": "08:00",
+            },
+        }
+
+        for freq, payload in cases.items():
+            with self.subTest(freq=freq):
+                self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+                self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": freq})
+                response = self.client.post(
+                    reverse("medications:medication_add"),
+                    {"step": "3", **payload},
+                )
+                self.assertEqual(response.status_code, 302, f"{freq}: expected redirect to step 4, got {response.status_code}")
+                self.assertIn("step=4", response.url, f"{freq}: redirect did not go to step 4")
+
+    def test_step3_edit_flow_advances_for_all_frequency_types(self):
+        """The edit flow reuses the same wizard; step 3 must advance for all
+        frequency types there too, including with a past start date."""
+        user = User.objects.create_user(
+            email="pat@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            first_name="مریم",
+            last_name="صادقی",
+            is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        self.client.force_login(user)
+
+        past_date = (timezone.now().date() - datetime.timedelta(days=7)).strftime("%Y/%m/%d")
+        future_date = (timezone.now().date() + datetime.timedelta(days=7)).strftime("%Y/%m/%d")
+
+        med = Medication.objects.create(
+            patient=patient, name="آسپرین", unit="tablet", dosage="۱ قرص", current_inventory=10,
+        )
+
+        schedules = {
+            "daily": MedicationSchedule.objects.create(
+                medication=med, frequency_type=MedicationSchedule.FrequencyType.DAILY,
+                medication_times=["08:00"], start_date=timezone.now().date() - datetime.timedelta(days=7),
+                end_date=timezone.now().date() + datetime.timedelta(days=7),
+            ),
+            "specific_days": MedicationSchedule.objects.create(
+                medication=med, frequency_type=MedicationSchedule.FrequencyType.SPECIFIC_DAYS,
+                specific_days=["sat", "mon"], medication_times=["08:00"],
+                start_date=timezone.now().date() - datetime.timedelta(days=7),
+                end_date=timezone.now().date() + datetime.timedelta(days=7),
+            ),
+            "every_n_days": MedicationSchedule.objects.create(
+                medication=med, frequency_type=MedicationSchedule.FrequencyType.EVERY_N_DAYS,
+                n_days_interval=2, medication_times=["08:00"],
+                start_date=timezone.now().date() - datetime.timedelta(days=7),
+            ),
+            "every_x_hours": MedicationSchedule.objects.create(
+                medication=med, frequency_type=MedicationSchedule.FrequencyType.EVERY_X_HOURS,
+                x_hours_interval=4, anchor_datetime=timezone.now(),
+                start_date=timezone.now().date() - datetime.timedelta(days=7),
+                end_date=timezone.now().date() + datetime.timedelta(days=7),
+            ),
+        }
+
+        edit_payloads = {
+            "daily": {"medication_times": "08:00\n20:00", "start_date": past_date},
+            "specific_days": {
+                "specific_days": ["sat", "mon", "wed"],
+                "medication_times_specific": "08:00",
+                "start_date_specific": past_date,
+            },
+            "every_n_days": {
+                "n_days_interval": 3,
+                "medication_times_n": "09:00",
+                "start_date_n": past_date,
+            },
+            "every_x_hours": {
+                "x_hours_interval": 6,
+                "anchor_date": past_date,
+                "anchor_time": "09:00",
+            },
+        }
+
+        for freq, payload in edit_payloads.items():
+            with self.subTest(freq=freq):
+                session = self.client.session
+                session[f"medication_wizard_{user.id}"] = {
+                    "medication_pk": med.pk, "name": "آسپرین", "unit": "tablet",
+                    "dosage": "۱ قرص", "frequency_type": freq,
+                    "medication_times": ["08:00"], "specific_days": ["sat", "mon"],
+                    "n_days_interval": 2, "x_hours_interval": 4,
+                    "anchor_date": past_date, "anchor_time": "08:00",
+                    "start_date": past_date, "end_date": future_date,
+                }
+                session.save()
+                response = self.client.post(
+                    reverse("medications:medication_edit", args=[med.pk]),
+                    {"step": "3", "frequency_type": freq, **payload},
+                )
+                self.assertEqual(response.status_code, 302, f"{freq}: expected redirect to step 4, got {response.status_code}")
+                self.assertIn("step=4", response.url, f"{freq}: redirect did not go to step 4")
+
     def test_step3_only_relevant_fields_validated(self):
         user = User.objects.create_user(
             email="pat@example.com",

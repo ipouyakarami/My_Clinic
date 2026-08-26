@@ -10,7 +10,7 @@ Companion to `requirements.md`. Work top to bottom; each phase should be functio
 - [x] Django project scaffold, PostgreSQL configured via `DATABASE_URL` env var
 - [x] `TIME_ZONE=Asia/Tehran` set in settings, `USE_TZ=True`
 - [x] `.env.example` created listing all required env vars (no real secrets committed)
-- [x] Redis + Celery + Celery Beat wired up and running locally (`celery -A ... worker`, `celery -A ... beat`)
+- [x] Celery + Celery Beat wired up and running locally, broker & result backend over PostgreSQL via Kombu's SQLAlchemy transport (`celery -A ... worker`, `celery -A ... beat`)
 - [x] Tailwind (or chosen CSS approach) configured with RTL base styles
 - [x] Base template with `dir="rtl"`, Persian font, nav skeleton
 - [x] Test runner configured (`TestCase` or pytest-django) and running in CI/locally on a no-op test
@@ -105,3 +105,14 @@ This reverses the original Persian/RTL/Jalali requirement. All dates are now Gre
 - [x] **Docs:** `requirements.md` updated (§0, §7, §8, §9), `plan.md` updated with this phase
 
 > **Note:** Phase 7 (Jalali Date Handling Pass) and Phase 8 (RTL & Visual Polish) from the original plan are superseded by this localization pass and are no longer applicable.
+
+## Redis Removal Pass — Celery broker/result backend → PostgreSQL (2026-08-26)
+
+Celery's broker and result backend no longer use Redis. They now run over the project's existing PostgreSQL database via Kombu's SQLAlchemy transport (`sqla+postgres://...` broker, `db+postgres://...` result backend), so there is one fewer infrastructure service to run. No Celery task logic, schedule, or behavior changed — this is an infrastructure swap only. The per-minute Beat cadence is light enough that a database transport is a perfectly adequate broker.
+
+- [x] **Dependencies:** removed `redis` from `requirements.txt`; added `sqlalchemy` (required by Kombu's SQLAlchemy transport)
+- [x] **Settings:** removed `REDIS_URL`; `CELERY_BROKER_URL` and `CELERY_RESULT_BACKEND` now point at `sqla+`/`db+`-prefixed `DATABASE_URL`
+- [x] **Environment:** removed `REDIS_URL` from `.env.example` (no replacement — the existing `DATABASE_URL` is reused)
+- [x] **Infra:** no Redis container/service to remove (no docker-compose, Procfile, or deploy scripts existed)
+- [x] **Beat scheduler:** verified the default file-based `PersistentScheduler` does not depend on Redis
+- [x] **Docs:** `requirements.md` §2 (tech stack + env vars), `plan.md` Phase 0 line updated

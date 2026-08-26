@@ -339,7 +339,7 @@
     toggleFields();
 
     var step2Form = document.querySelector('input[name="frequency_type"][type="radio"]');
-    if (!step2Form) {
+    if (step2Form) {
         document.querySelectorAll('input[name="frequency_type"][type="radio"]').forEach(function(radio) {
             radio.addEventListener('change', function() {
                 if (frequencyHidden) {
