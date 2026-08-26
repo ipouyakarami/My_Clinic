@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from allauth.account.forms import LoginForm
@@ -111,3 +112,57 @@ class DoctorCreationForm(FormMixin, forms.ModelForm):
                 description=self.cleaned_data["description"],
             )
         return user
+
+
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
+
+
+def validate_image_file(value):
+    """Image type validation is handled by Django's ImageField, which uses PIL
+    to read the file header and verify the image (magic-byte rigor matching the
+    PDF validator in medical_tests/forms.py). This validator covers the one
+    thing PIL does not: an explicit maximum file size."""
+    if not value:
+        raise ValidationError(_("No file selected."))
+    if value.size > MAX_IMAGE_SIZE:
+        raise ValidationError(_("File size must not exceed 5 MB."))
+
+
+class DoctorProfileForm(forms.ModelForm):
+    first_name = forms.CharField(label=_("First Name"), max_length=150)
+    last_name = forms.CharField(label=_("Last Name"), max_length=150)
+
+    class Meta:
+        model = Doctor
+        fields = ["specialty", "description", "profile_picture"]
+        labels = {
+            "specialty": _("Specialty"),
+            "description": _("Description"),
+            "profile_picture": _("Profile Picture"),
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields["first_name"].initial = self.instance.user.first_name
+            self.fields["last_name"].initial = self.instance.user.last_name
+
+    def clean_profile_picture(self):
+        picture = self.cleaned_data.get("profile_picture")
+        if picture is False:
+            return picture
+        if picture:
+            validate_image_file(picture)
+        return picture
+
+    def save(self, commit=True):
+        doctor = super().save(commit=False)
+        doctor.user.first_name = self.cleaned_data["first_name"]
+        doctor.user.last_name = self.cleaned_data["last_name"]
+        if commit:
+            doctor.user.save()
+            doctor.save()
+        return doctor

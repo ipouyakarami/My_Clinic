@@ -2,6 +2,7 @@ import re
 from urllib.parse import urlparse
 
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -509,3 +510,257 @@ class NavBarTests(TestCase):
         self.assertNotContains(response, "Working Hours")
         self.assertNotContains(response, "Today&#x27;s Appointments")
         self.assertNotContains(response, "All Appointments")
+
+
+def _build_test_image(format="PNG", color=(255, 0, 0), size=(100, 100)):
+    import io
+
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", size, color=color).save(buf, format=format)
+    buf.seek(0)
+    ext = "jpg" if format == "JPEG" else format.lower()
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    return SimpleUploadedFile(f"photo.{ext}", buf.getvalue(), content_type=f"image/{ext}")
+
+
+def _build_oversized_valid_image():
+    import io
+    import random
+
+    from PIL import Image
+
+    random.seed(42)
+    side = 1500
+    raw = bytes(random.randint(0, 255) for _ in range(side * side * 3))
+    img = Image.frombytes("RGB", (side, side), raw)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    return SimpleUploadedFile("huge.png", buf.getvalue(), content_type="image/png")
+
+
+class DoctorProfileViewTests(TestCase):
+    def setUp(self):
+        form = DoctorCreationForm(
+            data={
+                "email": "doc@example.com",
+                "first_name": "علی",
+                "last_name": "رضایی",
+                "specialty": "قلب و عروق",
+                "description": "متخصص قلب",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        self.doctor_user = form.save()
+        self.doctor_user.is_active = True
+        self.doctor_user.set_password(STRONG_PASSWORD)
+        self.doctor_user.save()
+        EmailAddress.objects.update_or_create(
+            user=self.doctor_user,
+            defaults={"email": self.doctor_user.email, "verified": True, "primary": True},
+        )
+        self.profile_url = reverse("accounts:doctor_profile")
+
+    def _login(self):
+        self.client.force_login(self.doctor_user)
+
+    def test_profile_page_renders_form(self):
+        self._login()
+        response = self.client.get(self.profile_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Edit Profile")
+        self.assertContains(response, "قلب و عروق")
+
+    def test_successful_update_of_fields_and_picture(self):
+        self._login()
+        image = _build_test_image()
+        response = self.client.post(
+            self.profile_url,
+            {
+                "first_name": "سارا",
+                "last_name": "محمدی",
+                "specialty": "پوست",
+                "description": "متخصص پوست و مو",
+                "profile_picture": image,
+            },
+        )
+        self.assertRedirects(response, self.profile_url)
+        self.doctor_user.refresh_from_db()
+        doctor = self.doctor_user.doctor
+        self.assertEqual(self.doctor_user.first_name, "سارا")
+        self.assertEqual(self.doctor_user.last_name, "محمدی")
+        self.assertEqual(doctor.specialty, "پوست")
+        self.assertEqual(doctor.description, "متخصص پوست و مو")
+        self.assertTrue(doctor.profile_picture)
+        self.assertIn("doctor_pictures", doctor.profile_picture.name)
+
+    def test_updated_info_shows_on_public_profile(self):
+        self._login()
+        image = _build_test_image(format="JPEG", color=(0, 128, 0))
+        self.client.post(
+            self.profile_url,
+            {
+                "first_name": "مریم",
+                "last_name": "صادقی",
+                "specialty": "چشم",
+                "description": "new description",
+                "profile_picture": image,
+            },
+        )
+        self.doctor_user.doctor.refresh_from_db()
+        public = self.client.get(
+            reverse("core:doctor_detail", args=[self.doctor_user.doctor.pk])
+        )
+        self.assertEqual(public.status_code, 200)
+        self.assertContains(public, "مریم")
+        self.assertContains(public, "چشم")
+        self.assertContains(public, "new description")
+        self.assertContains(public, self.doctor_user.doctor.profile_picture.url)
+
+    def test_invalid_image_type_rejected(self):
+        self._login()
+        fake = SimpleUploadedFile(
+            "hack.png", b"This is not a real image", content_type="image/png"
+        )
+        response = self.client.post(
+            self.profile_url,
+            {
+                "first_name": "علی",
+                "last_name": "رضایی",
+                "specialty": "قلب و عروق",
+                "description": "متخصص قلب",
+                "profile_picture": fake,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.doctor_user.refresh_from_db()
+        self.assertFalse(self.doctor_user.doctor.profile_picture)
+        form = response.context["form"]
+        self.assertIn("profile_picture", form.errors)
+        self.assertContains(response, "valid image")
+
+    def test_oversized_image_rejected(self):
+        self._login()
+        oversized = _build_oversized_valid_image()
+        self.assertGreater(oversized.size, 5 * 1024 * 1024)
+        response = self.client.post(
+            self.profile_url,
+            {
+                "first_name": "علی",
+                "last_name": "رضایی",
+                "specialty": "قلب و عروق",
+                "description": "متخصص قلب",
+                "profile_picture": oversized,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.doctor_user.refresh_from_db()
+        self.assertFalse(self.doctor_user.doctor.profile_picture)
+        self.assertContains(response, "5 MB")
+
+    def test_other_field_edits_preserved_when_image_invalid(self):
+        self._login()
+        fake = SimpleUploadedFile("hack.png", b"not an image", content_type="image/png")
+        response = self.client.post(
+            self.profile_url,
+            {
+                "first_name": "پریسا",
+                "last_name": "نوری",
+                "specialty": "داخلی",
+                "description": "دکتر داخلی",
+                "profile_picture": fake,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        form = response.context["form"]
+        self.assertEqual(form["first_name"].value(), "پریسا")
+        self.assertEqual(form["specialty"].value(), "داخلی")
+
+    def test_remove_existing_picture(self):
+        self._login()
+        image = _build_test_image()
+        self.client.post(
+            self.profile_url,
+            {
+                "first_name": "علی",
+                "last_name": "رضایی",
+                "specialty": "قلب و عروق",
+                "description": "متخصص قلب",
+                "profile_picture": image,
+            },
+        )
+        self.doctor_user.refresh_from_db()
+        self.assertTrue(self.doctor_user.doctor.profile_picture)
+        response = self.client.post(
+            self.profile_url,
+            {
+                "first_name": "علی",
+                "last_name": "رضایی",
+                "specialty": "قلب و عروق",
+                "description": "متخصص قلب",
+                "profile_picture-clear": "clear",
+            },
+        )
+        self.assertRedirects(response, self.profile_url)
+        self.doctor_user.refresh_from_db()
+        self.assertFalse(self.doctor_user.doctor.profile_picture)
+
+    def test_patient_cannot_access_doctor_profile(self):
+        from accounts.services import create_patient_with_profile
+
+        patient = create_patient_with_profile(
+            {
+                "email": "pat@example.com",
+                "first_name": "مریم",
+                "last_name": "صادقی",
+                "password1": STRONG_PASSWORD,
+                "password2": STRONG_PASSWORD,
+            }
+        )
+        patient.is_active = True
+        patient.save()
+        self.client.force_login(patient)
+        response = self.client.get(self.profile_url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_requires_login(self):
+        response = self.client.get(self.profile_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_doctor_edits_only_own_profile(self):
+        other_form = DoctorCreationForm(
+            data={
+                "email": "other@example.com",
+                "first_name": "زهرا",
+                "last_name": "موسوی",
+                "specialty": "چشم",
+                "description": "چشم‌پزشک",
+            }
+        )
+        self.assertTrue(other_form.is_valid(), other_form.errors)
+        other_user = other_form.save()
+        other_user.is_active = True
+        other_user.set_password(STRONG_PASSWORD)
+        other_user.save()
+        self._login()
+        response = self.client.post(
+            self.profile_url,
+            {
+                "first_name": "HACKED",
+                "last_name": "HACKED",
+                "specialty": "HACKED",
+                "description": "HACKED",
+            },
+        )
+        self.assertRedirects(response, self.profile_url)
+        self.doctor_user.refresh_from_db()
+        self.assertEqual(self.doctor_user.first_name, "HACKED")
+        other_user.refresh_from_db()
+        self.assertEqual(other_user.first_name, "زهرا")
+        self.assertEqual(other_user.doctor.specialty, "چشم")

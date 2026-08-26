@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import ActivateAccountView, CheckInboxView, DashboardView, PatientSignupView
+from .views import ActivateAccountView, CheckInboxView, DashboardView, DoctorProfileView, PatientSignupView
 
 app_name = "accounts"
 
@@ -13,4 +13,5 @@ urlpatterns = [
         name="check_inbox",
     ),
     path("activate/<str:key>/", ActivateAccountView.as_view(), name="activate_account"),
+    path("profile/", DoctorProfileView.as_view(), name="doctor_profile"),
 ]

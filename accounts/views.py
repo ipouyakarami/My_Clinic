@@ -1,11 +1,12 @@
 import os
 
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.views.generic import FormView, TemplateView
+from django.utils.translation import gettext_lazy as _
+from django.views.generic import FormView, TemplateView, UpdateView
 
 from allauth.account.adapter import get_adapter
 from allauth.account.models import EmailConfirmation
@@ -15,8 +16,8 @@ from medications.models import Medication, MedicationIntake
 
 from appointments.models import Appointment
 
-from .forms import PatientSignupForm, SetPasswordForm
-from .models import Doctor, Patient
+from .forms import DoctorProfileForm, PatientSignupForm, SetPasswordForm
+from .models import Doctor, Patient, User
 from .services import activate_account, create_patient_with_profile, send_activation_email
 
 
@@ -245,3 +246,26 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             )
 
         return context
+
+
+class DoctorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    def test_func(self):
+        return (
+            self.request.user.is_authenticated
+            and self.request.user.user_type == User.UserType.DOCTOR
+        )
+
+
+class DoctorProfileView(DoctorRequiredMixin, UpdateView):
+    template_name = "accounts/doctor_profile.html"
+    form_class = DoctorProfileForm
+
+    def get_object(self, queryset=None):
+        return self.request.user.doctor
+
+    def form_valid(self, form):
+        messages.success(self.request, _("Profile updated successfully."))
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("accounts:doctor_profile")

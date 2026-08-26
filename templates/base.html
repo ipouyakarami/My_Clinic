@@ -18,6 +18,7 @@
                 {% if user.user_type == 'doctor' %}
                     <ul class="hidden items-center gap-6 text-sm font-medium md:flex">
                         <li><a href="{% url 'accounts:dashboard' %}" class="text-slate-600 hover:text-primary">Dashboard</a></li>
+                        <li><a href="{% url 'accounts:doctor_profile' %}" class="text-slate-600 hover:text-primary">Profile</a></li>
                         <li><a href="{% url 'appointments:working_hours_create' %}" class="text-slate-600 hover:text-primary">Working Hours</a></li>
                         <li><a href="{% url 'appointments:doctor_today_appointments' %}" class="text-slate-600 hover:text-primary">Today's Appointments</a></li>
                         <li><a href="{% url 'appointments:doctor_appointment_list' %}" class="text-slate-600 hover:text-primary">All Appointments</a></li>
