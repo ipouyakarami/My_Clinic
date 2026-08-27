@@ -1768,6 +1768,98 @@ class StartDateNotPastTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("step=4", response.url)
 
+    def test_end_before_start_rejected_for_daily(self):
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "3", "frequency_type": "daily", "medication_times": "08:00",
+             "start_date": self.future_date, "end_date": self.past_date},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "End date cannot be before the start date")
+
+    def test_end_equals_start_accepted_for_daily(self):
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "3", "frequency_type": "daily", "medication_times": "08:00",
+             "start_date": self.future_date, "end_date": self.future_date},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("step=4", response.url)
+
+    def test_blank_end_date_accepted_for_daily(self):
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "3", "frequency_type": "daily", "medication_times": "08:00",
+             "start_date": self.future_date},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("step=4", response.url)
+
+    def test_end_before_start_rejected_for_specific_days(self):
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "specific_days"})
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "3", "frequency_type": "specific_days", "specific_days": ["sat", "mon"],
+             "medication_times_specific": "08:00",
+             "start_date_specific": self.future_date, "end_date_specific": self.past_date},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "End date cannot be before the start date")
+
+    def test_end_before_start_rejected_for_every_n_days(self):
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "every_n_days"})
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "3", "frequency_type": "every_n_days", "n_days_interval": 2,
+             "medication_times_n": "08:00",
+             "start_date_n": self.future_date, "end_date_n": self.past_date},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "End date cannot be before the start date")
+
+    def test_end_before_anchor_rejected_for_every_x_hours(self):
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "every_x_hours"})
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "3", "frequency_type": "every_x_hours",
+             "anchor_date": self.future_date, "anchor_time": "08:00", "x_hours_interval": 4,
+             "end_date_x": self.past_date},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "End date cannot be before the start date")
+
+    def test_edit_end_date_validated_against_start_date(self):
+        med = Medication.objects.create(patient=self.user.patient, name="آسپرین", unit="tablet", dosage="1")
+        MedicationSchedule.objects.create(
+            medication=med, frequency_type=MedicationSchedule.FrequencyType.DAILY,
+            medication_times=["08:00"], start_date=timezone.now().date() - datetime.timedelta(days=7),
+        )
+        earlier_date = (timezone.now().date() - datetime.timedelta(days=14)).strftime("%Y/%m/%d")
+        session = self.client.session
+        session[f"medication_wizard_{self.user.id}"] = {
+            "medication_pk": med.pk, "name": "آسپرین", "unit": "tablet",
+            "dosage": "1", "frequency_type": "daily", "medication_times": ["08:00"],
+            "start_date": self.past_date,
+        }
+        session.save()
+        response = self.client.post(
+            reverse("medications:medication_edit", args=[med.pk]),
+            {"step": "3", "frequency_type": "daily", "medication_times": "08:00",
+             "start_date": self.past_date, "end_date": earlier_date},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "End date cannot be before the start date")
+
+
 class MedicationCalendarTests(TestCase):
     def _create_patient(self, email="pat@example.com"):
         user = User.objects.create_user(

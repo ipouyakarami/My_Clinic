@@ -115,25 +115,25 @@ class MedicationStep3Form(forms.Form):
         label=_("End Date"),
         required=False,
         allow_past=True,
-        widget=forms.TextInput(attrs={"class": "calendar-picker"}),
+        widget=forms.TextInput(attrs={"class": "calendar-picker", "data-start-field": "start_date"}),
     )
     end_date_specific = GregorianDateField(
         label=_("End Date"),
         required=False,
         allow_past=True,
-        widget=forms.TextInput(attrs={"class": "calendar-picker"}),
+        widget=forms.TextInput(attrs={"class": "calendar-picker", "data-start-field": "start_date_specific"}),
     )
     end_date_n = GregorianDateField(
         label=_("End Date"),
         required=False,
         allow_past=True,
-        widget=forms.TextInput(attrs={"class": "calendar-picker"}),
+        widget=forms.TextInput(attrs={"class": "calendar-picker", "data-start-field": "start_date_n"}),
     )
     end_date_x = GregorianDateField(
         label=_("End Date"),
         required=False,
         allow_past=True,
-        widget=forms.TextInput(attrs={"class": "calendar-picker"}),
+        widget=forms.TextInput(attrs={"class": "calendar-picker", "data-start-field": "anchor_date"}),
     )
 
     _ACTIVE_DATE_FIELDS = {
@@ -173,6 +173,19 @@ class MedicationStep3Form(forms.Form):
             return
         if submitted < self._now():
             self.add_error(field_name, error_message)
+
+    def _validate_end_not_before_start(self, end_field, end_value, start_value, error_message):
+        if end_value is None:
+            return
+        if start_value is not None and end_value < start_value:
+            self.add_error(end_field, error_message)
+
+    _START_END_FIELD_MAP = {
+        "daily": ("start_date", "end_date"),
+        "specific_days": ("start_date_specific", "end_date_specific"),
+        "every_n_days": ("start_date_n", "end_date_n"),
+        "every_x_hours": ("anchor_date", "end_date_x"),
+    }
 
     def clean(self):
         cleaned = super().clean()
@@ -260,6 +273,14 @@ class MedicationStep3Form(forms.Form):
                 )
                 if not unchanged and anchor_dt is not None and anchor_dt < self._now():
                     self.add_error("anchor_date", _("Anchor date cannot be in the past."))
+
+        start_end = self._START_END_FIELD_MAP.get(freq)
+        if start_end:
+            start_field, end_field = start_end
+            self._validate_end_not_before_start(
+                end_field, cleaned.get(end_field), cleaned.get(start_field),
+                _("End date cannot be before the start date."),
+            )
 
         return cleaned
 

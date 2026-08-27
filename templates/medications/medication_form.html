@@ -101,12 +101,12 @@
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">Start Date</label>
                         {{ form.start_date_specific }}
-                        {% if form.start_date.errors %}<p class="mt-1 text-xs text-red-700">{{ form.start_date.errors|join:", " }}</p>{% endif %}
+                        {% if form.start_date_specific.errors %}<p class="mt-1 text-xs text-red-700">{{ form.start_date_specific.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">End Date (optional)</label>
                         {{ form.end_date_specific }}
-                        {% if form.end_date.errors %}<p class="mt-1 text-xs text-red-700">{{ form.end_date.errors|join:", " }}</p>{% endif %}
+                        {% if form.end_date_specific.errors %}<p class="mt-1 text-xs text-red-700">{{ form.end_date_specific.errors|join:", " }}</p>{% endif %}
                     </div>
                 </div>
 
@@ -124,12 +124,12 @@
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">Start Date</label>
                         {{ form.start_date_n }}
-                        {% if form.start_date.errors %}<p class="mt-1 text-xs text-red-700">{{ form.start_date.errors|join:", " }}</p>{% endif %}
+                        {% if form.start_date_n.errors %}<p class="mt-1 text-xs text-red-700">{{ form.start_date_n.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">End Date (optional)</label>
                         {{ form.end_date_n }}
-                        {% if form.end_date.errors %}<p class="mt-1 text-xs text-red-700">{{ form.end_date.errors|join:", " }}</p>{% endif %}
+                        {% if form.end_date_n.errors %}<p class="mt-1 text-xs text-red-700">{{ form.end_date_n.errors|join:", " }}</p>{% endif %}
                     </div>
                 </div>
 
@@ -154,7 +154,7 @@
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">End Date (optional)</label>
                         {{ form.end_date_x }}
-                        {% if form.end_date.errors %}<p class="mt-1 text-xs text-red-700">{{ form.end_date.errors|join:", " }}</p>{% endif %}
+                        {% if form.end_date_x.errors %}<p class="mt-1 text-xs text-red-700">{{ form.end_date_x.errors|join:", " }}</p>{% endif %}
                     </div>
                 </div>
             </div>
@@ -297,15 +297,29 @@
         if (!group) return;
         group.querySelectorAll('.calendar-picker').forEach(function(inp) {
             if (!initializedPickers[inp.name]) {
-                initCalendarPicker(inp, { minDate: inp.getAttribute('data-min-date') || undefined });
-                initializedPickers[inp.name] = true;
+                initializedPickers[inp.name] = initCalendarPicker(inp, { minDate: inp.getAttribute('data-min-date') || undefined });
             }
         });
         group.querySelectorAll('.time-picker').forEach(function(inp) {
             if (!initializedPickers[inp.name]) {
-                initTimePicker(inp, {});
-                initializedPickers[inp.name] = true;
+                initializedPickers[inp.name] = initTimePicker(inp, {});
             }
+        });
+        group.querySelectorAll('.calendar-picker[data-start-field]').forEach(function(endInp) {
+            var startName = endInp.getAttribute('data-start-field');
+            var startFp = initializedPickers[startName];
+            var endFp = initializedPickers[endInp.name];
+            if (!startFp || !endFp) return;
+            function applyStartConstraint() {
+                if (startFp.selectedDates.length) {
+                    endFp.set('minDate', startFp.selectedDates[0]);
+                    if (endFp.selectedDates.length && endFp.selectedDates[0] < startFp.selectedDates[0]) {
+                        endFp.clear();
+                    }
+                }
+            }
+            startFp.config.onChange.push(applyStartConstraint);
+            applyStartConstraint();
         });
     }
 
