@@ -1,5 +1,8 @@
+import datetime
+
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Patient, Doctor, User
@@ -18,6 +21,18 @@ WEEKDAY_CHOICES = [
     ("thu", _("Thursday")),
     ("fri", _("Friday")),
 ]
+
+PERSIAN_DIGITS = "۰۱۲۳۴۵۶۷۸۹"
+ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩"
+LATIN_DIGITS = "0123456789"
+_DIGIT_TRANSLATION = str.maketrans(
+    PERSIAN_DIGITS + ARABIC_DIGITS,
+    LATIN_DIGITS * 2,
+)
+
+
+def _normalize_digits(value):
+    return value.translate(_DIGIT_TRANSLATION)
 
 
 class MedicationStep1Form(forms.Form):
@@ -71,7 +86,7 @@ class MedicationStep3Form(forms.Form):
         label=_("Anchor Date"),
         required=False,
         allow_past=True,
-        widget=forms.TextInput(attrs={"class": "calendar-picker"}),
+        widget=forms.TextInput(attrs={"class": "calendar-picker", "data-min-date": "today"}),
     )
     anchor_time = forms.CharField(
         label=_("Anchor Time"),
@@ -82,19 +97,19 @@ class MedicationStep3Form(forms.Form):
         label=_("Start Date"),
         required=False,
         allow_past=True,
-        widget=forms.TextInput(attrs={"class": "calendar-picker"}),
+        widget=forms.TextInput(attrs={"class": "calendar-picker", "data-min-date": "today"}),
     )
     start_date_specific = GregorianDateField(
         label=_("Start Date"),
         required=False,
         allow_past=True,
-        widget=forms.TextInput(attrs={"class": "calendar-picker"}),
+        widget=forms.TextInput(attrs={"class": "calendar-picker", "data-min-date": "today"}),
     )
     start_date_n = GregorianDateField(
         label=_("Start Date"),
         required=False,
         allow_past=True,
-        widget=forms.TextInput(attrs={"class": "calendar-picker"}),
+        widget=forms.TextInput(attrs={"class": "calendar-picker", "data-min-date": "today"}),
     )
     end_date = GregorianDateField(
         label=_("End Date"),
@@ -133,6 +148,32 @@ class MedicationStep3Form(forms.Form):
         "anchor_date",
     ]
 
+    def __init__(self, *args, existing_schedule=None, **kwargs):
+        self.existing_schedule = existing_schedule
+        super().__init__(*args, **kwargs)
+
+    def _today(self):
+        return timezone.localtime(timezone.now()).date()
+
+    def _now(self):
+        return timezone.localtime(timezone.now())
+
+    def _validate_not_past_date(self, field_name, submitted, existing, error_message):
+        if submitted is None:
+            return
+        if existing is not None and submitted == existing:
+            return
+        if submitted < self._today():
+            self.add_error(field_name, error_message)
+
+    def _validate_not_past_datetime(self, field_name, submitted, existing, error_message):
+        if submitted is None:
+            return
+        if existing is not None and submitted == existing:
+            return
+        if submitted < self._now():
+            self.add_error(field_name, error_message)
+
     def clean(self):
         cleaned = super().clean()
         freq = self.data.get("frequency_type")
@@ -144,11 +185,18 @@ class MedicationStep3Form(forms.Form):
                 if self._errors is not None and field_name in self._errors:
                     del self._errors[field_name]
 
+        existing = self.existing_schedule
+
         if freq == "daily":
             times = self._parse_times(cleaned.get("medication_times"))
             if not times:
                 self.add_error("medication_times", _("Enter at least one medication time."))
             cleaned["medication_times"] = times
+            self._validate_not_past_date(
+                "start_date", cleaned.get("start_date"),
+                existing.start_date if existing else None,
+                _("Start date cannot be in the past."),
+            )
 
         elif freq == "specific_days":
             days = cleaned.get("specific_days")
@@ -159,6 +207,11 @@ class MedicationStep3Form(forms.Form):
                 self.add_error("medication_times_specific", _("Enter at least one medication time."))
             cleaned["specific_days"] = days
             cleaned["medication_times"] = times
+            self._validate_not_past_date(
+                "start_date_specific", cleaned.get("start_date_specific"),
+                existing.start_date if existing else None,
+                _("Start date cannot be in the past."),
+            )
 
         elif freq == "every_n_days":
             if not cleaned.get("n_days_interval") or cleaned.get("n_days_interval") < 1:
@@ -170,6 +223,11 @@ class MedicationStep3Form(forms.Form):
                 self.add_error("start_date_n", _("Start date is required."))
             cleaned["n_days_interval"] = cleaned.get("n_days_interval")
             cleaned["medication_times"] = times
+            self._validate_not_past_date(
+                "start_date_n", cleaned.get("start_date_n"),
+                existing.start_date if existing else None,
+                _("Start date cannot be in the past."),
+            )
 
         elif freq == "every_x_hours":
             if not cleaned.get("x_hours_interval") or cleaned.get("x_hours_interval") < 1:
@@ -179,6 +237,29 @@ class MedicationStep3Form(forms.Form):
             if not cleaned.get("anchor_time"):
                 self.add_error("anchor_time", _("Anchor time is required."))
             cleaned["x_hours_interval"] = cleaned.get("x_hours_interval")
+            anchor_date = cleaned.get("anchor_date")
+            anchor_time = cleaned.get("anchor_time")
+            if anchor_date and anchor_time:
+                try:
+                    hh, mm = map(int, anchor_time.split(":"))
+                    anchor_dt = timezone.make_aware(
+                        datetime.datetime.combine(anchor_date, datetime.time(hh, mm)),
+                        timezone.get_current_timezone(),
+                    )
+                except (ValueError, TypeError):
+                    anchor_dt = None
+                existing_ad = existing.anchor_datetime if existing else None
+                if existing_ad is not None:
+                    existing_ad_local = timezone.localtime(existing_ad)
+                else:
+                    existing_ad_local = None
+                unchanged = (
+                    anchor_dt is not None and existing_ad_local is not None
+                    and anchor_dt.date() == existing_ad_local.date()
+                    and hh == existing_ad_local.hour and mm == existing_ad_local.minute
+                )
+                if not unchanged and anchor_dt is not None and anchor_dt < self._now():
+                    self.add_error("anchor_date", _("Anchor date cannot be in the past."))
 
         return cleaned
 
@@ -203,7 +284,35 @@ class MedicationStep3Form(forms.Form):
 
 
 class MedicationStep4Form(forms.Form):
-    dosage = forms.CharField(label=_("Dosage"), max_length=200, required=False)
+    dosage = forms.CharField(
+        label=_("Dosage"),
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={
+            "type": "number",
+            "step": "any",
+            "min": "0",
+            "inputmode": "decimal",
+            "placeholder": "e.g. 1, 0.5, 2.5",
+        }),
+    )
+
+    def clean_dosage(self):
+        value = (self.cleaned_data.get("dosage") or "").strip()
+        if not value:
+            return ""
+        normalized = _normalize_digits(value)
+        try:
+            from decimal import Decimal, InvalidOperation
+
+            amount = Decimal(normalized)
+        except (InvalidOperation, ValueError, ArithmeticError):
+            raise ValidationError(_("Dosage must be a number."))
+        if amount != amount:
+            raise ValidationError(_("Dosage must be a number."))
+        if amount <= 0:
+            raise ValidationError(_("Dosage must be a positive number."))
+        return str(amount)
 
 
 class MedicationStep5Form(forms.Form):

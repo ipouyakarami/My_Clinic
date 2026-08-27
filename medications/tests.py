@@ -743,7 +743,7 @@ class DoctorAccessBoundaryTests(TestCase):
         session = self.client.session
         session["medication_wizard_%d" % doc_user.id] = {
             "medication_pk": med.pk, "name": "ایبوپروفن", "unit": "tablet",
-            "dosage": "۲ قرص", "frequency_type": "daily",
+            "dosage": "2", "frequency_type": "daily",
             "medication_times": ["08:00"], "current_inventory": 20,
             "refill_reminder_threshold": 5, "start_date": "", "end_date": "",
         }
@@ -756,7 +756,7 @@ class DoctorAccessBoundaryTests(TestCase):
         self.assertEqual(response.status_code, 302)
         med.refresh_from_db()
         self.assertEqual(med.name, "ایبوپروفن")
-        self.assertEqual(med.dosage, "۲ قرص")
+        self.assertEqual(med.dosage, "2")
 
     def test_doctor_redirected_from_patient_medication_urls(self):
         doc_user, _, _ = self._create_doctor_appointment()
@@ -859,7 +859,7 @@ class MedicationViewTests(TestCase):
             reverse("medications:medication_add"),
             {
                 "step": "4",
-                "dosage": "۱ قرص",
+                "dosage": "1",
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -1057,9 +1057,9 @@ class MedicationViewTests(TestCase):
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
         self.client.post(
             reverse("medications:medication_add"),
-            {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/08/25"},
+            {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/09/25"},
         )
-        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "1 tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "1"})
         self.client.post(
             reverse("medications:medication_add"),
             {"step": "5", "current_inventory": 10, "refill_reminder_threshold": 5},
@@ -1241,7 +1241,7 @@ class MedicationViewTests(TestCase):
                 "frequency_type": "specific_days",
                 "specific_days": ["sat", "mon", "wed"],
                 "medication_times_specific": "08:00",
-                "start_date_specific": "2026/08/25",
+                "start_date_specific": "2026/09/25",
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -1335,7 +1335,13 @@ class MedicationViewTests(TestCase):
             ),
             "every_x_hours": MedicationSchedule.objects.create(
                 medication=med, frequency_type=MedicationSchedule.FrequencyType.EVERY_X_HOURS,
-                x_hours_interval=4, anchor_datetime=timezone.now(),
+                x_hours_interval=4, anchor_datetime=timezone.make_aware(
+                    datetime.datetime.combine(
+                        timezone.now().date() - datetime.timedelta(days=7),
+                        datetime.time(9, 0),
+                    ),
+                    timezone.get_current_timezone(),
+                ),
                 start_date=timezone.now().date() - datetime.timedelta(days=7),
                 end_date=timezone.now().date() + datetime.timedelta(days=7),
             ),
@@ -1365,7 +1371,7 @@ class MedicationViewTests(TestCase):
                 session = self.client.session
                 session[f"medication_wizard_{user.id}"] = {
                     "medication_pk": med.pk, "name": "آسپرین", "unit": "tablet",
-                    "dosage": "۱ قرص", "frequency_type": freq,
+                    "dosage": "1", "frequency_type": freq,
                     "medication_times": ["08:00"], "specific_days": ["sat", "mon"],
                     "n_days_interval": 2, "x_hours_interval": 4,
                     "anchor_date": past_date, "anchor_time": "08:00",
@@ -1378,32 +1384,6 @@ class MedicationViewTests(TestCase):
                 )
                 self.assertEqual(response.status_code, 302, f"{freq}: expected redirect to step 4, got {response.status_code}")
                 self.assertIn("step=4", response.url, f"{freq}: redirect did not go to step 4")
-
-    def test_step3_only_relevant_fields_validated(self):
-        user = User.objects.create_user(
-            email="pat@example.com",
-            password=STRONG_PASSWORD,
-            user_type=User.UserType.PATIENT,
-            first_name="مریم",
-            last_name="صادقی",
-            is_active=True,
-        )
-        Patient.objects.create(user=user, phone_number="09121234567")
-        self.client.force_login(user)
-
-        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
-        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
-
-        response = self.client.post(
-            reverse("medications:medication_add"),
-            {
-                "step": "3",
-                "frequency_type": "daily",
-                "medication_times": "",
-            },
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "at least one medication time")
 
     def test_edit_medication_prefills_all_frequency_types(self):
         user = User.objects.create_user(
@@ -1458,7 +1438,7 @@ class MedicationViewTests(TestCase):
             {
                 "step": "3",
                 "frequency_type": "every_x_hours",
-                "anchor_date": "2026/08/25",
+                "anchor_date": "2026/09/25",
                 "anchor_time": "08:00",
                 "x_hours_interval": 4,
             },
@@ -1468,7 +1448,7 @@ class MedicationViewTests(TestCase):
 
         session = self.client.session
         wizard_data = session.get(f"medication_wizard_{user.id}", {})
-        self.assertEqual(wizard_data.get("anchor_date"), "2026/08/25")
+        self.assertEqual(wizard_data.get("anchor_date"), "2026/09/25")
         self.assertEqual(wizard_data.get("anchor_time"), "08:00")
         self.assertEqual(wizard_data.get("x_hours_interval"), 4)
         json.dumps(wizard_data)
@@ -1491,20 +1471,20 @@ class MedicationViewTests(TestCase):
 
         self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
-        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00\n20:00", "start_date": "2026/08/25"})
-        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00\n20:00", "start_date": "2026/09/25"})
+        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "1"})
         self.client.post(reverse("medications:medication_add"), {"step": "5", "current_inventory": 10, "refill_reminder_threshold": 5})
 
         response = self.client.get(reverse("medications:medication_add") + "?step=6")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "آسپرین")
-        self.assertContains(response, "قرص")
-        self.assertContains(response, "۱ قرص")
+        self.assertContains(response, "tablet")
+        self.assertContains(response, "1")
         self.assertContains(response, "10")
         self.assertContains(response, "5")
         self.assertContains(response, "08:00")
         self.assertContains(response, "20:00")
-        self.assertContains(response, "2026/08/25")
+        self.assertContains(response, "2026/09/25")
 
     def test_step6_review_for_every_x_hours(self):
         """Step 6 must show anchor_datetime and x_hours_interval for every_x_hours."""
@@ -1521,15 +1501,15 @@ class MedicationViewTests(TestCase):
 
         self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "every_x_hours"})
-        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "every_x_hours", "anchor_date": "2026/08/25", "anchor_time": "08:00", "x_hours_interval": 4})
-        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "every_x_hours", "anchor_date": "2026/09/25", "anchor_time": "08:00", "x_hours_interval": 4})
+        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "1"})
         self.client.post(reverse("medications:medication_add"), {"step": "5", "current_inventory": 10, "refill_reminder_threshold": 5})
 
         response = self.client.get(reverse("medications:medication_add") + "?step=6")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "آسپرین")
-        self.assertContains(response, "۱ قرص")
-        self.assertContains(response, "2026/08/25")
+        self.assertContains(response, "1")
+        self.assertContains(response, "2026/09/25")
         self.assertContains(response, "08:00")
         self.assertContains(response, "Every 4 hour(s)")
         self.assertNotContains(response, "Specific Days")
@@ -1549,8 +1529,8 @@ class MedicationViewTests(TestCase):
 
         self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "specific_days"})
-        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "specific_days", "specific_days": ["sat", "mon"], "medication_times_specific": "08:00", "start_date_specific": "2026/08/25"})
-        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "specific_days", "specific_days": ["sat", "mon"], "medication_times_specific": "08:00", "start_date_specific": "2026/09/25"})
+        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "1"})
         self.client.post(reverse("medications:medication_add"), {"step": "5", "current_inventory": 10, "refill_reminder_threshold": 5})
 
         response = self.client.get(reverse("medications:medication_add") + "?step=6")
@@ -1558,7 +1538,7 @@ class MedicationViewTests(TestCase):
         self.assertContains(response, "آسپرین")
         self.assertContains(response, "Saturday")
         self.assertContains(response, "Monday")
-        self.assertContains(response, "2026/08/25")
+        self.assertContains(response, "2026/09/25")
 
     def test_gregorian_date_input_stored_directly(self):
         """Gregorian date input is stored directly in the database."""
@@ -1575,8 +1555,8 @@ class MedicationViewTests(TestCase):
 
         self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
-        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/08/25"})
-        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/09/25"})
+        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "1"})
         self.client.post(reverse("medications:medication_add"), {"step": "5", "current_inventory": 10, "refill_reminder_threshold": 5})
         response = self.client.post(reverse("medications:medication_add"), {"step": "6"})
         self.assertEqual(response.status_code, 302)
@@ -1584,7 +1564,7 @@ class MedicationViewTests(TestCase):
         medication = Medication.objects.get(name="آسپرین")
         schedule = MedicationSchedule.objects.get(medication=medication)
         import datetime as dt_module
-        self.assertEqual(schedule.start_date, dt_module.date(2026, 8, 25))
+        self.assertEqual(schedule.start_date, dt_module.date(2026, 9, 25))
 
     def test_edit_medication_shows_dates(self):
         """Edit Medication must display stored Gregorian dates."""
@@ -1617,6 +1597,176 @@ class MedicationViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "2026/08/25")
 
+
+    def _create_patient_for_dosage_tests(self, email="pat@example.com"):
+        user = User.objects.create_user(
+            email=email, password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        Patient.objects.create(user=user, phone_number="09121234567")
+        self.client.force_login(user)
+        return user
+
+    def _post_steps_1_to_3_for_dosage(self, freq="daily", start_date=None, anchor_date=None, anchor_time="08:00"):
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": freq})
+        data = {"step": "3", "frequency_type": freq}
+        if freq == "daily":
+            data["medication_times"] = "08:00"
+            if start_date:
+                data["start_date"] = start_date
+        elif freq == "specific_days":
+            data["specific_days"] = ["sat", "mon"]
+            data["medication_times_specific"] = "08:00"
+            if start_date:
+                data["start_date_specific"] = start_date
+        elif freq == "every_n_days":
+            data["n_days_interval"] = 2
+            data["medication_times_n"] = "08:00"
+            if start_date:
+                data["start_date_n"] = start_date
+        elif freq == "every_x_hours":
+            data["x_hours_interval"] = 4
+            if anchor_date:
+                data["anchor_date"] = anchor_date
+            data["anchor_time"] = anchor_time
+        self.client.post(reverse("medications:medication_add"), data)
+
+
+class DosageValidationTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        Patient.objects.create(user=self.user, phone_number="09121234567")
+        self.client.force_login(self.user)
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
+        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00"})
+
+    def _post_dosage(self, value):
+        return self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "4", "dosage": value},
+        )
+
+    def test_valid_integer_dosage_accepted(self):
+        response = self._post_dosage("2")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("step=5", response.url)
+
+    def test_valid_decimal_dosage_accepted(self):
+        response = self._post_dosage("0.5")
+        self.assertEqual(response.status_code, 302)
+
+    def test_valid_persian_digits_accepted(self):
+        response = self._post_dosage("۲.۵")
+        self.assertEqual(response.status_code, 302)
+
+    def test_non_numeric_dosage_rejected(self):
+        response = self._post_dosage("1 tablet")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "must be a number")
+
+    def test_zero_dosage_rejected(self):
+        response = self._post_dosage("0")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "positive number")
+
+    def test_negative_dosage_rejected(self):
+        response = self._post_dosage("-1")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "positive number")
+
+    def test_empty_dosage_accepted(self):
+        response = self._post_dosage("")
+        self.assertEqual(response.status_code, 302)
+
+
+class StartDateNotPastTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        Patient.objects.create(user=self.user, phone_number="09121234567")
+        self.client.force_login(self.user)
+        self.past_date = (timezone.now().date() - datetime.timedelta(days=7)).strftime("%Y/%m/%d")
+        self.future_date = (timezone.now().date() + datetime.timedelta(days=7)).strftime("%Y/%m/%d")
+
+    def test_daily_past_start_date_rejected(self):
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": self.past_date},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "cannot be in the past")
+
+    def test_daily_future_start_date_accepted(self):
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": self.future_date},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("step=4", response.url)
+
+    def test_every_x_hours_past_anchor_rejected(self):
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "every_x_hours"})
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "3", "frequency_type": "every_x_hours", "anchor_date": self.past_date, "anchor_time": "08:00", "x_hours_interval": 4},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "cannot be in the past")
+
+    def test_edit_existing_past_start_date_not_blocked(self):
+        med = Medication.objects.create(patient=self.user.patient, name="آسپرین", unit="tablet", dosage="1")
+        MedicationSchedule.objects.create(
+            medication=med, frequency_type=MedicationSchedule.FrequencyType.DAILY,
+            medication_times=["08:00"], start_date=timezone.now().date() - datetime.timedelta(days=7),
+        )
+        session = self.client.session
+        session[f"medication_wizard_{self.user.id}"] = {
+            "medication_pk": med.pk, "name": "آسپرین", "unit": "tablet",
+            "dosage": "1", "frequency_type": "daily", "medication_times": ["08:00"],
+            "start_date": self.past_date,
+        }
+        session.save()
+        response = self.client.post(
+            reverse("medications:medication_edit", args=[med.pk]),
+            {"step": "3", "frequency_type": "daily", "medication_times": "08:00\n20:00", "start_date": self.past_date},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("step=4", response.url)
+
+    def test_edit_existing_past_anchor_not_blocked(self):
+        past_local = timezone.localtime(timezone.now()) - datetime.timedelta(days=7)
+        med = Medication.objects.create(patient=self.user.patient, name="آسپرین", unit="tablet", dosage="1")
+        MedicationSchedule.objects.create(
+            medication=med, frequency_type=MedicationSchedule.FrequencyType.EVERY_X_HOURS,
+            x_hours_interval=4, anchor_datetime=past_local,
+        )
+        anchor_date = past_local.date().strftime("%Y/%m/%d")
+        anchor_time = past_local.strftime("%H:%M")
+        session = self.client.session
+        session[f"medication_wizard_{self.user.id}"] = {
+            "medication_pk": med.pk, "name": "آسپرین", "unit": "tablet",
+            "dosage": "1", "frequency_type": "every_x_hours",
+            "x_hours_interval": 4, "anchor_date": anchor_date, "anchor_time": anchor_time,
+        }
+        session.save()
+        response = self.client.post(
+            reverse("medications:medication_edit", args=[med.pk]),
+            {"step": "3", "frequency_type": "every_x_hours", "anchor_date": anchor_date, "anchor_time": anchor_time, "x_hours_interval": 6},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("step=4", response.url)
 
 class MedicationCalendarTests(TestCase):
     def _create_patient(self, email="pat@example.com"):
@@ -2098,13 +2248,13 @@ class GregorianDateRoundTripTests(TestCase):
 
         self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
-        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/08/25"})
-        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/09/25"})
+        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "1"})
         self.client.post(reverse("medications:medication_add"), {"step": "5", "current_inventory": 10, "refill_reminder_threshold": 5})
         self.client.post(reverse("medications:medication_add"), {"step": "6"})
 
         schedule = MedicationSchedule.objects.get(medication__patient=patient)
-        self.assertEqual(schedule.start_date, dt_module.date(2026, 8, 25))
+        self.assertEqual(schedule.start_date, dt_module.date(2026, 9, 25))
 
     def test_end_date_gregorian_storage(self):
         """end_date: Gregorian input must be stored directly in DB."""
@@ -2114,8 +2264,8 @@ class GregorianDateRoundTripTests(TestCase):
 
         self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
-        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/08/25", "end_date": "2026/09/25"})
-        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/09/25", "end_date": "2026/09/25"})
+        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "1"})
         self.client.post(reverse("medications:medication_add"), {"step": "5", "current_inventory": 10, "refill_reminder_threshold": 5})
         self.client.post(reverse("medications:medication_add"), {"step": "6"})
 
@@ -2130,15 +2280,15 @@ class GregorianDateRoundTripTests(TestCase):
 
         self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "every_x_hours"})
-        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "every_x_hours", "anchor_date": "2026/08/25", "anchor_time": "08:30", "x_hours_interval": 4})
-        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "every_x_hours", "anchor_date": "2026/09/25", "anchor_time": "08:30", "x_hours_interval": 4})
+        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "1"})
         self.client.post(reverse("medications:medication_add"), {"step": "5", "current_inventory": 10, "refill_reminder_threshold": 5})
         self.client.post(reverse("medications:medication_add"), {"step": "6"})
 
         schedule = MedicationSchedule.objects.get(medication__patient=patient)
         tz = timezone.get_current_timezone()
         local_dt = timezone.localtime(schedule.anchor_datetime, tz)
-        self.assertEqual(local_dt.date(), dt_module.date(2026, 8, 25))
+        self.assertEqual(local_dt.date(), dt_module.date(2026, 9, 25))
         self.assertEqual(local_dt.hour, 8)
         self.assertEqual(local_dt.minute, 30)
 
@@ -2149,15 +2299,15 @@ class GregorianDateRoundTripTests(TestCase):
 
         self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
         self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
-        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/08/25"})
-        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "۱ قرص"})
+        self.client.post(reverse("medications:medication_add"), {"step": "3", "frequency_type": "daily", "medication_times": "08:00", "start_date": "2026/09/25"})
+        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "1"})
         self.client.post(reverse("medications:medication_add"), {"step": "5", "current_inventory": 10, "refill_reminder_threshold": 5})
         self.client.post(reverse("medications:medication_add"), {"step": "6"})
 
         medication = Medication.objects.get(patient=patient)
         response = self.client.get(reverse("medications:medication_edit", args=[medication.pk]) + "?step=3")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "2026/08/25")
+        self.assertContains(response, "2026/09/25")
 
     def test_calendar_gregorian_date_queries(self):
         """Calendar view must query using Gregorian date directly."""

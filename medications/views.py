@@ -406,7 +406,17 @@ class MedicationWizardView(PatientRequiredMixin, View):
         step = int(request.POST.get("step", 1))
         session_data = self._get_session_data()
         form_class = self._get_step_form_class(step)
-        form = form_class(request.POST)
+
+        existing_schedule = None
+        if pk:
+            patient = self._get_patient(request.user)
+            medication = self._get_medication(patient, pk)
+            existing_schedule = medication.schedules.first()
+
+        if step == 3:
+            form = form_class(request.POST, existing_schedule=existing_schedule)
+        else:
+            form = form_class(request.POST)
 
         if form.is_valid():
             if step == 1:

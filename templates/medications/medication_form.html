@@ -297,7 +297,7 @@
         if (!group) return;
         group.querySelectorAll('.calendar-picker').forEach(function(inp) {
             if (!initializedPickers[inp.name]) {
-                initCalendarPicker(inp);
+                initCalendarPicker(inp, { minDate: inp.getAttribute('data-min-date') || undefined });
                 initializedPickers[inp.name] = true;
             }
         });
