@@ -1,4 +1,3 @@
-import datetime
 import logging
 
 from celery import shared_task
@@ -77,20 +76,6 @@ def send_reminder_emails():
             for i in intakes:
                 i.reminder_sent = False
                 i.save(update_fields=["reminder_sent"])
-
-
-@shared_task
-def transition_missed_intakes():
-    now = timezone.now()
-    tz = timezone.get_current_timezone()
-    threshold = now - datetime.timedelta(minutes=30)
-    missed = MedicationIntake.objects.filter(
-        status=MedicationIntake.Status.PENDING,
-        scheduled_time__lte=threshold,
-    )
-    count = missed.update(status=MedicationIntake.Status.MISSED)
-    if count:
-        logger.info("Transitioned %d intakes to missed status.", count)
 
 
 @shared_task

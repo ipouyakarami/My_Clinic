@@ -526,39 +526,54 @@ class MedicationIntakeActionView(View):
 class MedicationIntakeBatchView(LoginRequiredMixin, View):
     def post(self, request):
         if request.user.user_type != User.UserType.PATIENT:
-            return JsonResponse({"error": "forbidden"}, status=403)
+            messages.error(request, "You are not allowed to perform this action.")
+            return redirect("accounts:dashboard")
 
         scheduled_time_str = request.POST.get("scheduled_time")
         if not scheduled_time_str:
-            return JsonResponse({"error": "missing scheduled_time"}, status=400)
+            messages.error(request, "Missing scheduled time.")
+            return redirect("accounts:dashboard")
 
-        try:
-            scheduled_time = datetime.datetime.fromisoformat(scheduled_time_str)
-            if timezone.is_naive(scheduled_time):
-                scheduled_time = timezone.make_aware(scheduled_time, timezone.get_current_timezone())
-        except (ValueError, TypeError):
-            return JsonResponse({"error": "invalid datetime"}, status=400)
+        scheduled_time = self._parse_scheduled_time(scheduled_time_str)
+        if scheduled_time is None:
+            messages.error(request, "Invalid scheduled time.")
+            return redirect("accounts:dashboard")
 
-        updated = MedicationIntake.objects.filter(
+        intakes = MedicationIntake.objects.filter(
             medication__patient__user=request.user,
             scheduled_time=scheduled_time,
             status=MedicationIntake.Status.PENDING,
-        ).update(
-            status=MedicationIntake.Status.TAKEN,
-            recorded_at=timezone.now(),
         )
 
-        for intake in MedicationIntake.objects.filter(
-            medication__patient__user=request.user,
-            scheduled_time=scheduled_time,
-            status=MedicationIntake.Status.TAKEN,
-            recorded_at=timezone.now(),
-        ).order_by("-id")[:updated]:
-            from .tasks import handle_intake_taken
-            handle_intake_taken(intake.pk)
-            break
+        count = 0
+        for intake in intakes:
+            if intake.status == MedicationIntake.Status.PENDING:
+                intake.status = MedicationIntake.Status.TAKEN
+                intake.recorded_at = timezone.now()
+                intake.save(update_fields=["status", "recorded_at"])
+                from .tasks import handle_intake_taken
+                handle_intake_taken(intake.pk)
+                count += 1
 
-        return JsonResponse({"updated": updated})
+        if count:
+            messages.success(request, f"{count} medication(s) marked as taken.")
+        else:
+            messages.info(request, "No pending medications to mark as taken.")
+
+        return redirect("accounts:dashboard")
+
+    @staticmethod
+    def _parse_scheduled_time(value):
+        try:
+            dt = datetime.datetime.fromisoformat(value)
+        except ValueError:
+            try:
+                dt = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                return None
+        if timezone.is_naive(dt):
+            dt = timezone.make_aware(dt, timezone.get_current_timezone())
+        return dt
 
 
 class MedicationCalendarView(PatientRequiredMixin, TemplateView):

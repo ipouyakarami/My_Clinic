@@ -49,7 +49,7 @@ Companion to `requirements.md`. Work top to bottom; each phase should be functio
 - [x] `MedicationIntake` generation task (7-day rolling window) on schedule create/update
 - [x] Celery Beat: daily window-extension task
 - [x] Celery Beat: per-minute reminder-send task, grouping same-time intakes into one email per patient
-- [x] Celery Beat: missed-intake auto-transition (pending → missed at scheduled_time + 30min) — **test per requirements.md §8**
+- [x] ~~Celery Beat: missed-intake auto-transition (pending → missed at scheduled_time + 30min) — **test per requirements.md §8~~** — **Removed (2026-08-28):** `missed` status and its auto-transition task were removed per requirements.md §1 row 7 reversal; pending intakes now remain pending until taken/skipped.
 - [x] Signed-token one-click Taken/Skipped email links + corresponding views
 - [x] Inventory decrement on `taken` + one-time refill-reminder email at threshold — **test per requirements.md §8**
 - [x] Email-send failure handling: log, no infinite retry — **test per requirements.md §8**
@@ -59,7 +59,7 @@ Companion to `requirements.md`. Work top to bottom; each phase should be functio
 - [x] Test: schedule generation correctness for each of the 4 frequency types
 
 > **Note:** Rows 7–10 of requirements.md §1 (Open Decisions) remain marked ⏳ Default proposed. Phase 4 was implemented using those proposed defaults. Confirm or override before the next phase that touches the affected behavior:
-> - Row 7: 30-minute grace window for missed-intake auto-transition
+> - Row 7: ~~30-minute grace window for missed-intake auto-transition~~ — **Reversed (2026-08-28):** `missed` status removed; pending intakes remain pending until taken/skipped.
 > - Row 8: Doctor access scope (any appointment status vs. only active/completed)
 > - Row 9: Inventory decrement logic (decrement-by-1 vs. decrement-by-dose-quantity)
 > - Row 10: flatpickr + Jalali locale plugin choice

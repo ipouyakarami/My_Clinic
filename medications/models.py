@@ -123,7 +123,6 @@ class MedicationIntake(models.Model):
         PENDING = "pending", _("Pending")
         TAKEN = "taken", _("Taken")
         SKIPPED = "skipped", _("Skipped")
-        MISSED = "missed", _("Missed")
 
     medication = models.ForeignKey(
         Medication,

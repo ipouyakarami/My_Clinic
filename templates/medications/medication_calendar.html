@@ -36,7 +36,6 @@
                                         {% if intake.status == 'taken' %}bg-emerald-100 text-emerald-800{% endif %}
                                         {% if intake.status == 'pending' %}bg-amber-100 text-amber-800{% endif %}
                                         {% if intake.status == 'skipped' %}bg-slate-100 text-slate-800{% endif %}
-                                        {% if intake.status == 'missed' %}bg-red-100 text-red-800{% endif %}
                                         ">{{ intake.get_status_display }}</span>
                                     {% if intake.status == 'pending' %}
                                         <div class="mt-3 flex gap-2">

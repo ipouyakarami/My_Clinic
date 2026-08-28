@@ -134,82 +134,6 @@ class ScheduleGenerationTests(TestCase):
         self.assertGreater(intakes.count(), 0)
 
 
-class MissedIntakeTransitionTests(TestCase):
-    def test_pending_intakes_become_missed_after_30_minutes(self):
-        user = User.objects.create_user(
-            email="pat@example.com",
-            password=STRONG_PASSWORD,
-            user_type=User.UserType.PATIENT,
-            first_name="مریم",
-            last_name="صادقی",
-            is_active=True,
-        )
-        patient = Patient.objects.create(user=user, phone_number="09121234567")
-        medication = Medication.objects.create(
-            patient=patient,
-            name="آسپرین",
-            unit="قرص",
-            dosage="۱ قرص",
-        )
-        schedule = MedicationSchedule.objects.create(
-            medication=medication,
-            frequency_type=MedicationSchedule.FrequencyType.DAILY,
-            medication_times=["08:00"],
-            start_date=timezone.now().date(),
-            end_date=timezone.now().date(),
-        )
-        from .views import _generate_intakes_for_schedule
-        _generate_intakes_for_schedule(schedule)
-        intake = MedicationIntake.objects.filter(medication=medication).first()
-        self.assertEqual(intake.status, MedicationIntake.Status.PENDING)
-
-        fake_now = intake.scheduled_time + datetime.timedelta(minutes=31)
-        with patch("django.utils.timezone.now", return_value=fake_now):
-            from .tasks import transition_missed_intakes
-            transition_missed_intakes()
-
-        intake.refresh_from_db()
-        self.assertEqual(intake.status, MedicationIntake.Status.MISSED)
-
-    def test_taken_intake_not_overwritten_by_missed_task(self):
-        user = User.objects.create_user(
-            email="pat@example.com",
-            password=STRONG_PASSWORD,
-            user_type=User.UserType.PATIENT,
-            first_name="مریم",
-            last_name="صادقی",
-            is_active=True,
-        )
-        patient = Patient.objects.create(user=user, phone_number="09121234567")
-        medication = Medication.objects.create(
-            patient=patient,
-            name="آسپرین",
-            unit="قرص",
-            dosage="۱ قرص",
-        )
-        schedule = MedicationSchedule.objects.create(
-            medication=medication,
-            frequency_type=MedicationSchedule.FrequencyType.DAILY,
-            medication_times=["08:00"],
-            start_date=timezone.now().date(),
-            end_date=timezone.now().date(),
-        )
-        from .views import _generate_intakes_for_schedule
-        _generate_intakes_for_schedule(schedule)
-        intake = MedicationIntake.objects.filter(medication=medication).first()
-        intake.status = MedicationIntake.Status.TAKEN
-        intake.recorded_at = timezone.now()
-        intake.save(update_fields=["status", "recorded_at"])
-
-        fake_now = intake.scheduled_time + datetime.timedelta(minutes=31)
-        with patch("django.utils.timezone.now", return_value=fake_now):
-            from .tasks import transition_missed_intakes
-            transition_missed_intakes()
-
-        intake.refresh_from_db()
-        self.assertEqual(intake.status, MedicationIntake.Status.TAKEN)
-
-
 class BulkMarkTakenTests(TestCase):
     def test_bulk_mark_only_pending_intakes_for_patient(self):
         pat1 = User.objects.create_user(
@@ -231,8 +155,8 @@ class BulkMarkTakenTests(TestCase):
         patient1 = Patient.objects.create(user=pat1, phone_number="09121234567")
         patient2 = Patient.objects.create(user=pat2, phone_number="09129876543")
 
-        med1 = Medication.objects.create(patient=patient1, name="دارو۱", unit="قرص")
-        med2 = Medication.objects.create(patient=patient2, name="دارو۲", unit="قرص")
+        med1 = Medication.objects.create(patient=patient1, name="دارو۱", unit="قرص", current_inventory=5)
+        med2 = Medication.objects.create(patient=patient2, name="دارو۲", unit="قرص", current_inventory=5)
 
         now = timezone.now()
         scheduled = now.replace(minute=0, second=0, microsecond=0) + timezone.timedelta(hours=1)
@@ -246,15 +170,45 @@ class BulkMarkTakenTests(TestCase):
         self.client.force_login(pat1)
         response = self.client.post(
             reverse("medications:intake_mark_batch"),
-            {"scheduled_time": scheduled.isoformat()},
+            {"scheduled_time": timezone.localtime(scheduled).strftime("%Y-%m-%d %H:%M:%S")},
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["updated"], 1)
+        self.assertRedirects(response, reverse("accounts:dashboard"))
 
         intake1.refresh_from_db()
         intake2.refresh_from_db()
         self.assertEqual(intake1.status, MedicationIntake.Status.TAKEN)
         self.assertEqual(intake2.status, MedicationIntake.Status.PENDING)
+
+    def test_bulk_mark_decrements_inventory_for_each(self):
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        med = Medication.objects.create(patient=patient, name="دارو", unit="قرص", current_inventory=10)
+
+        now = timezone.now()
+        scheduled = now.replace(minute=0, second=0, microsecond=0) + timezone.timedelta(hours=1)
+        for _ in range(3):
+            MedicationIntake.objects.create(
+                medication=med, scheduled_time=scheduled, status=MedicationIntake.Status.PENDING
+            )
+
+        self.client.force_login(user)
+        response = self.client.post(
+            reverse("medications:intake_mark_batch"),
+            {"scheduled_time": timezone.localtime(scheduled).strftime("%Y-%m-%d %H:%M:%S")},
+        )
+        self.assertRedirects(response, reverse("accounts:dashboard"))
+
+        med.refresh_from_db()
+        self.assertEqual(med.current_inventory, 7)
+        self.assertEqual(
+            MedicationIntake.objects.filter(
+                medication=med, scheduled_time=scheduled, status=MedicationIntake.Status.TAKEN,
+            ).count(),
+            3,
+        )
 
 
 class InventoryAndRefillTests(TestCase):
@@ -2006,7 +1960,7 @@ class MedicationCalendarTests(TestCase):
         self.assertContains(response, "20:00")
 
     def test_calendar_shows_all_statuses(self):
-        """All statuses (pending, taken, skipped, missed) should be displayed."""
+        """All statuses (pending, taken, skipped) should be displayed."""
         patient, user = self._create_patient()
         self.client.force_login(user)
         medication = Medication.objects.create(patient=patient, name="آسپرین", unit="قرص", dosage="۱ قرص")
@@ -2017,7 +1971,6 @@ class MedicationCalendarTests(TestCase):
             ("pending", 8, 0),
             ("taken", 12, 0),
             ("skipped", 16, 0),
-            ("missed", 20, 0),
         ]:
             dt = tz_utils.make_aware(
                 datetime.datetime.combine(today, datetime.time(hh, mm)), tz
@@ -2033,7 +1986,6 @@ class MedicationCalendarTests(TestCase):
         self.assertContains(response, "Pending")
         self.assertContains(response, "Taken")
         self.assertContains(response, "Skipped")
-        self.assertContains(response, "Missed")
 
     def test_calendar_midnight_boundary(self):
         """Intakes around midnight should be handled correctly with Asia/Tehran timezone."""

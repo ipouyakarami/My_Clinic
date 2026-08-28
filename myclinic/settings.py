@@ -185,8 +185,4 @@ CELERY_BEAT_SCHEDULE = {
         "task": "medications.tasks.send_reminder_emails",
         "schedule": crontab(minute="*"),
     },
-    "transition-missed-intakes-every-minute": {
-        "task": "medications.tasks.transition_missed_intakes",
-        "schedule": crontab(minute="*"),
-    },
 }

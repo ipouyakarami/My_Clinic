@@ -25,9 +25,9 @@ These were not fully specified in the source requirements. Reasonable defaults a
 | 4 | Test framework / CI | Django's built-in `TestCase` (pytest-django is an acceptable substitute) — at minimum, tests required for booking race condition, cancellation window, and reminder generation logic (see §8 acceptance criteria) | ✅ Default adopted — Django built-in `TestCase`; all §8 criteria get automated tests |
 | 5 | What "instant confirmation" shows the patient | On-screen success message + confirmation email; no SMS | ✅ Default adopted — on-screen + confirmation email, no SMS |
 | 6 | Doctor visit summary — can patient see it? | Yes, read-only, visible on the patient's appointment detail page once status is `completed` | ✅ Default adopted — patient sees summary read-only once `completed` |
-| 7 | Un-actioned reminder — what happens if patient never taps Taken/Skipped? | A Celery Beat task (runs every minute, same cadence as the reminder task) auto-transitions any `MedicationIntake` still `pending` **30 minutes** after `scheduled_time` to a new `missed` status. `reminder_sent` is unaffected; no further email is sent for that intake. | ✅ Default adopted — 30-minute grace window, no "missed" notification email |
+| 7 | Un-actioned reminder — what happens if patient never taps Taken/Skipped? | ~~A Celery Beat task (runs every minute, same cadence as the reminder task) auto-transitions any `MedicationIntake` still `pending` **30 minutes** after `scheduled_time` to a new `missed` status. `reminder_sent` is unaffected; no further email is sent for that intake.~~ **Reversed (see changelog):** a `missed` status was added and then removed — `MedicationIntake.status` is now only `pending`/`taken`/`skipped`, and a `pending` intake stays `pending` indefinitely until taken or skipped. No auto-transition task runs. | ⚠️ Reversed — `missed` status removed; pending intakes remain pending until taken/skipped |
 | 8 | Doctor access to a patient's medication schedule | A doctor may view, add, and edit medication/schedule records **only** for a patient with whom they have at least one `Appointment` (any status), accessed via that appointment's detail page. No open-ended doctor→patient medication access outside an appointment relationship. | ✅ Default adopted — any appointment status grants access |
-| 9 | Inventory decrement & refill-reminder trigger | `Medication.current_inventory` decrements by 1 each time an intake tied to it is marked `taken` (not on `skipped`/`missed`). When `current_inventory <= refill_reminder_threshold`, a one-time "time to refill" email is sent (separate template from the dose reminder) and `refill_reminder_sent=True` is set so it doesn't repeat; it resets to `False` whenever the patient edits `current_inventory` back above the threshold. | ✅ Default adopted — decrement-by-1 per taken intake |
+| 9 | Inventory decrement & refill-reminder trigger | `Medication.current_inventory` decrements by 1 each time an intake tied to it is marked `taken` (not on `skipped`). When `current_inventory <= refill_reminder_threshold`, a one-time "time to refill" email is sent (separate template from the dose reminder) and `refill_reminder_sent=True` is set so it doesn't repeat; it resets to `False` whenever the patient edits `current_inventory` back above the threshold. | ✅ Default adopted — decrement-by-1 per taken intake |
 | 10 | Frontend date/time picker library | `flatpickr` + a Jalali/Persian locale plugin (e.g. `jalali-flatpickr`) for calendar inputs; `flatpickr`'s time mode (`enableTime`, `noCalendar: true`) for single time inputs; two linked `flatpickr` time instances (or its `mode: "range"`) for start+end time inputs. One library covers all four widget types needed. | ✅ Default adopted — flatpickr + custom Jalali conversion JS (jalali-date.js) |
 
 ---
@@ -122,7 +122,7 @@ TIME_ZONE=Asia/Tehran
 ### MedicationIntake
 - `medication` (FK → Medication)
 - `scheduled_time` (DateTimeField)
-- `status`: `pending` | `taken` | `skipped` | `missed` (auto-set — see §1 row 7)
+- `status`: `pending` | `taken` | `skipped`
 - `recorded_at` (DateTimeField, nullable)
 - `reminder_sent` (Boolean)
 - `token` (unique signed token for one-click email actions)
@@ -196,8 +196,8 @@ TIME_ZONE=Asia/Tehran
    - `specific_days` + `medication_times`: one intake per listed time, only on listed weekdays.
    - `every_n_days` + `medication_times`: one intake per listed time, every N days counted from `start_date`.
    - `every_x_hours`: intakes recur every X hours from `anchor_datetime`, until `end_date` 23:59:59 (or indefinitely if null, capped at the 7-day generation window like everything else).
-5. **Missed-intake transition (new):** the same per-minute Beat task (or a sibling task on the same schedule) also finds `MedicationIntake` rows still `status=pending` where `scheduled_time + 30 minutes <= now()` and sets `status=missed`. No email is sent for a `missed` transition; it only affects what the dashboard/calendar show. See §1 row 7.
-6. **Bulk "mark all as taken" (new):** the patient dashboard's today's-medications widget groups intakes by identical `scheduled_time` and shows one "Mark all as taken" button per group, alongside the existing per-medication Taken/Skipped controls, posting to `/medications/intake/mark-batch/`.
+ 5. ~~**Missed-intake transition (new):** the same per-minute Beat task (or a sibling task on the same schedule) also finds `MedicationIntake` rows still `status=pending` where `scheduled_time + 30 minutes <= now()` and sets `status=missed`. No email is sent for a `missed` transition; it only affects what the dashboard/calendar show. See §1 row 7.~~ **Removed — see §1 row 7 (reversed).**
+ 6. **Bulk "mark all as taken" (new):** the patient dashboard's today's-medications widget groups intakes by identical `scheduled_time` and shows one "Mark all as taken" button per group, alongside the existing per-medication Taken/Skipped controls, posting to `/medications/intake/mark-batch/`.
 7. **Inventory & refill reminder (new):** whenever an intake transitions to `taken` (via email link, dashboard action, or bulk action), decrement that medication's `current_inventory` by 1 (floor at 0). After the decrement, if `current_inventory <= refill_reminder_threshold` and `refill_reminder_sent=False`, send a "time to refill" email (separate template from the dose reminder — names the medication and remaining count) and set `refill_reminder_sent=True`. Editing `current_inventory` back above the threshold resets `refill_reminder_sent=False`. See §1 row 9.
 
 ---
@@ -243,13 +243,14 @@ For each risky behavior, an agent implementing it should write an automated test
 - **Rule:** malformed Gregorian date input must not silently default.
 - **Acceptance criteria:** form-level validation error shown inline, field retains user's raw input, no date is saved.
 
-### Missed-intake auto-transition
-- **Rule:** an intake untouched 30 minutes past its `scheduled_time` becomes `missed`, not left `pending` forever.
-- **Acceptance criteria:** the Beat task only touches rows that are still `pending` at `scheduled_time + 30min`; a row marked `taken`/`skipped` before that moment is never overwritten. Test: intake at T with no action → status is `missed` at T+31min; intake at T marked `taken` at T+5min → still `taken` at T+31min (task is a no-op for it).
+### ~~Missed-intake auto-transition~~
+- ~~**Rule:** an intake untouched 30 minutes past its `scheduled_time` becomes `missed`, not left `pending` forever.~~
+- ~~**Acceptance criteria:** the Beat task only touches rows that are still `pending` at `scheduled_time + 30min`; a row marked `taken`/`skipped` before that moment is never overwritten. Test: intake at T with no action → status is `missed` at T+31min; intake at T marked `taken` at T+5min → still `taken` at T+31min (task is a no-op for it).~~
+**Removed — see §1 row 7 (reversed). The `missed` status and its auto-transition task have been removed; pending intakes remain pending until taken or skipped.**
 
 ### Bulk "mark all as taken"
 - **Rule:** the batch-complete action must only affect the requesting patient's own intakes at that exact time.
-- **Acceptance criteria:** `/medications/intake/mark-batch/` only updates `pending` intakes belonging to the logged-in patient with the given `scheduled_time`; intakes for other patients, or already `taken`/`skipped`/`missed`, are untouched. Test: two patients each have an intake at the same clock time → one patient's bulk action does not affect the other's row.
+- **Acceptance criteria:** `/medications/intake/mark-batch/` only updates `pending` intakes belonging to the logged-in patient with the given `scheduled_time`; intakes for other patients, or already `taken`/`skipped`, are untouched. Test: two patients each have an intake at the same clock time → one patient's bulk action does not affect the other's row.
 
 ### Inventory decrement & refill reminder
 - **Rule:** refill email fires once per threshold crossing, not on every subsequent `taken` intake.
