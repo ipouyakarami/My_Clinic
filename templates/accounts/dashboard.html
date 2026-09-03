@@ -162,6 +162,10 @@
                 <p class="font-semibold text-slate-900">Upload Test</p>
                 <p class="mt-1 text-sm text-slate-500">Add test results</p>
             </a>
+            <a href="{% url 'accounts:telegram_connect' %}" class="rounded-2xl border border-sky-200 bg-sky-50 p-5 text-center transition hover:border-sky-300 hover:shadow-sm">
+                <p class="font-semibold text-slate-900">Connect Telegram</p>
+                <p class="mt-1 text-sm text-slate-500">Medication reminders in Telegram</p>
+            </a>
         </div>
     {% endif %}
 {% endblock %}

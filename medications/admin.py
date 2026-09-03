@@ -1,6 +1,9 @@
 from django.contrib import admin
 
-from .models import Medication, MedicationIntake, MedicationSchedule
+from .models import (
+    Medication, MedicationIntake, MedicationSchedule,
+    TelegramActivationCode,
+)
 
 
 @admin.register(Medication)
@@ -21,3 +24,11 @@ class MedicationIntakeAdmin(admin.ModelAdmin):
     list_display = ["medication", "scheduled_time", "status", "reminder_sent"]
     list_filter = ["status", "reminder_sent", "scheduled_time"]
     search_fields = ["medication__name", "token"]
+
+
+@admin.register(TelegramActivationCode)
+class TelegramActivationCodeAdmin(admin.ModelAdmin):
+    list_display = ["code", "telegram_chat_id", "telegram_username", "created_at", "expires_at", "used_at", "used_by_patient"]
+    list_filter = ["created_at", "expires_at", "used_at"]
+    search_fields = ["code", "telegram_chat_id", "telegram_username"]
+    readonly_fields = ["code", "telegram_chat_id", "telegram_username", "created_at", "expires_at"]

@@ -30,6 +30,7 @@
                         <li><a href="{% url 'medical_tests:medical_test_list' %}" class="text-slate-600 hover:text-primary">My Tests</a></li>
                         <li><a href="{% url 'medications:medication_list' %}" class="text-slate-600 hover:text-primary">My Medications</a></li>
                         <li><a href="{% url 'medications:medication_calendar' %}" class="text-slate-600 hover:text-primary">Medication Calendar</a></li>
+                        <li><a href="{% url 'accounts:telegram_connect' %}" class="text-slate-600 hover:text-primary">Connect Telegram</a></li>
                     </ul>
                 {% endif %}
             {% else %}
@@ -97,6 +98,7 @@
                         <li><a href="{% url 'medical_tests:medical_test_list' %}" class="block rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100">My Tests</a></li>
                         <li><a href="{% url 'medications:medication_list' %}" class="block rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100">My Medications</a></li>
                         <li><a href="{% url 'medications:medication_calendar' %}" class="block rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100">Medication Calendar</a></li>
+                        <li><a href="{% url 'accounts:telegram_connect' %}" class="block rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100">Connect Telegram</a></li>
                         <li>
                             <form method="post" action="{% url 'account_logout' %}">
                                 {% csrf_token %}

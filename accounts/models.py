@@ -70,6 +70,21 @@ class Patient(models.Model):
         verbose_name=_("user"),
     )
     phone_number = models.CharField(_("phone number"), max_length=15, blank=True)
+    telegram_chat_id = models.CharField(
+        _("Telegram chat ID"),
+        max_length=64,
+        blank=True,
+        null=True,
+        unique=True,
+        help_text=_("Telegram chat ID if the patient has linked their account."),
+    )
+    telegram_username = models.CharField(
+        _("Telegram username"),
+        max_length=64,
+        blank=True,
+        null=True,
+        help_text=_("Display username from Telegram, if available."),
+    )
 
     class Meta:
         verbose_name = _("patient")
@@ -77,6 +92,10 @@ class Patient(models.Model):
 
     def __str__(self):
         return str(self.user)
+
+    @property
+    def is_telegram_linked(self):
+        return bool(self.telegram_chat_id)
 
 
 class Doctor(models.Model):

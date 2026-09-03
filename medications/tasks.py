@@ -31,6 +31,62 @@ def extend_intake_window():
         _generate_intakes_for_schedule(schedule, horizon_days=7)
 
 
+import datetime
+import logging
+
+from celery import shared_task
+from django.conf import settings
+from django.core.mail import send_mail
+from django.db import transaction
+from django.template.loader import render_to_string
+from django.utils import timezone
+
+from .models import EmailFailureLog, Medication, MedicationIntake
+
+logger = logging.getLogger(__name__)
+
+
+def send_telegram_message(chat_id, text):
+    """Send a message via the Telegram Bot API. Fails silently (logged)."""
+    token = getattr(settings, "TELEGRAM_BOT_TOKEN", "") or __import__("os").environ.get("TELEGRAM_BOT_TOKEN")
+    if not token:
+        logger.warn("Cannot send Telegram message: TELEGRAM_BOT_TOKEN not set")
+        return False
+
+    import requests
+
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    try:
+        resp = requests.post(url, data={"chat_id": chat_id, "text": text, "parse_mode": "HTML"}, timeout=10)
+        if resp.status_code != 200:
+            logger.error("Telegram API error (%s) for chat %s: %s", resp.status_code, chat_id, resp.text[:200])
+            return False
+        return True
+    except Exception as exc:
+        logger.error("Failed to send Telegram message to chat %s: %s", chat_id, exc)
+        return False
+
+
+def build_telegram_message(patient_name, intakes, scheduled_time_str, date_str, site_url):
+    """Build the text message for a Telegram medication reminder."""
+    lines = [
+        f"💊 Medication Reminder — MyClinic",
+        f"",
+        f"Hello {patient_name}, it's time to take your medication scheduled for {date_str} at {scheduled_time_str}.",
+        f"",
+    ]
+    for intake in intakes:
+        med_name = intake.medication.name
+        dosage = intake.medication.dosage or "—"
+        lines.append(f"• <b>{med_name}</b> — {dosage}")
+
+    lines.append("")
+    lines.append(f"Log in to {site_url} to mark as taken or skipped.")
+    lines.append("")
+    lines.append("MyClinic — Doctor appointment booking & medication tracking")
+    return "\n".join(lines)
+
+
 @shared_task
 def send_reminder_emails():
     now = timezone.now()
@@ -48,31 +104,54 @@ def send_reminder_emails():
 
     for (email, scheduled_time), intakes in groups.items():
         first = intakes[0]
-        try:
-            context = {
-                "patient": first.medication.patient.user.get_full_name(),
-                "intakes": intakes,
-                "scheduled_time": scheduled_time.astimezone(tz).strftime("%H:%M"),
-                "date": scheduled_time.astimezone(tz).strftime("%Y/%m/%d"),
-                "site_url": settings.SITE_URL,
-            }
-            html_body = render_to_string("emails/medication_reminder.html", context)
-            text_body = render_to_string("emails/medication_reminder.txt", context)
-            send_mail(
-                "Medication Time — MyClinic",
-                text_body,
-                None,
-                [email],
-                html_message=html_body,
-                fail_silently=False,
+        patient = first.medication.patient
+        patient_name = patient.user.get_full_name()
+        scheduled_time_local = scheduled_time.astimezone(tz)
+        scheduled_time_str = scheduled_time_local.strftime("%H:%M")
+        date_str = scheduled_time_local.strftime("%Y/%m/%d")
+
+        context = {
+            "patient": patient_name,
+            "intakes": intakes,
+            "scheduled_time": scheduled_time_str,
+            "date": date_str,
+            "site_url": settings.SITE_URL,
+        }
+
+        # --- Send reminder via the patient's preferred channel ---
+        # Linked patients: Telegram only (no email).
+        # Unlinked patients: email only.
+        sent = False
+        if patient.telegram_chat_id:
+            telegram_text = build_telegram_message(
+                patient_name, intakes, scheduled_time_str, date_str, settings.SITE_URL,
             )
+            sent = send_telegram_message(patient.telegram_chat_id, telegram_text)
+            if not sent:
+                logger.error("Telegram reminder failed for patient %s (chat %s)", email, patient.telegram_chat_id)
+        else:
+            try:
+                html_body = render_to_string("emails/medication_reminder.html", context)
+                text_body = render_to_string("emails/medication_reminder.txt", context)
+                send_mail(
+                    "Medication Time — MyClinic",
+                    text_body,
+                    None,
+                    [email],
+                    html_message=html_body,
+                    fail_silently=False,
+                )
+                sent = True
+            except Exception as exc:
+                logger.error("Failed to send medication reminder email for intakes %s: %s", [i.pk for i in intakes], exc)
+                EmailFailureLog.objects.create(
+                    intake_ids=[i.pk for i in intakes],
+                    error_message=str(exc)[:1000],
+                )
+
+        if sent:
             MedicationIntake.objects.filter(pk__in=[i.pk for i in intakes]).update(reminder_sent=True)
-        except Exception as exc:
-            logger.error("Failed to send medication reminder email for intakes %s: %s", [i.pk for i in intakes], exc)
-            EmailFailureLog.objects.create(
-                intake_ids=[i.pk for i in intakes],
-                error_message=str(exc)[:1000],
-            )
+        else:
             for i in intakes:
                 i.reminder_sent = False
                 i.save(update_fields=["reminder_sent"])

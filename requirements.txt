@@ -18,6 +18,8 @@ psycopg==3.3.4
 psycopg-binary==3.3.4
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.3
+python-telegram-bot==21.0
+requests==2.32.0
 sqlalchemy==2.0.46
 six==1.17.0
 sqlparse==0.6.0

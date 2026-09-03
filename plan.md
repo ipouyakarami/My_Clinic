@@ -116,3 +116,34 @@ Celery's broker and result backend no longer use Redis. They now run over the pr
 - [x] **Infra:** no Redis container/service to remove (no docker-compose, Procfile, or deploy scripts existed)
 - [x] **Beat scheduler:** verified the default file-based `PersistentScheduler` does not depend on Redis
 - [x] **Docs:** `requirements.md` §2 (tech stack + env vars), `plan.md` Phase 0 line updated
+
+---
+
+## Telegram Integration Pass (2026-09-03)
+
+A new subsystem for medication reminders via Telegram, including account linking, bot process, and reminder integration alongside existing email reminders.
+
+- [x] **Security:** Document leaked token; do NOT use it in code/config; instruct revocation via @BotFather
+- [x] **Data model:** Add `Patient.telegram_chat_id` / `telegram_username` fields; create `TelegramActivationCode` model with `code`, `telegram_chat_id`, `telegram_username`, `created_at`, `expires_at` (10 min), `used_at`, `used_by_patient`
+- [x] **Bot process:** Create `run_telegram_bot` management command using `python-telegram-bot` (long-polling); `django.setup()` via management framework; register `/start`, `/help`, `/disconnect` handlers
+- [x] **Bot /start handler:** If chat already linked → reply "already connected"; else generate/reuse activation code, reply with code + 10-min expiry + site link
+- [x] **Bot /help handler:** Show bot description and available commands
+- [x] **Bot /disconnect handler:** Unlink patient's Telegram account
+- [x] **Site connect page:** `/telegram/connect/` (login required, patient-only) — shows bot link, connected status, or code-entry form; bot username read from `TELEGRAM_BOT_USERNAME` setting, not hardcoded
+- [x] **Site link view:** `/telegram/link/` (POST) — validate code (exists, not expired, not used), link patient to chat, mark code used; case-insensitive code lookup; race-protected via `select_for_update`
+- [x] **Site disconnect view:** `/telegram/disconnect/` (POST) — unlink patient's Telegram account
+- [x] **Permission checks:** Only logged-in patients can access connect/link/disconnect; doctors denied; no cross-patient linking
+- [x] **Reminder integration:** Extend `send_reminder_emails` task to send Telegram message alongside email for linked patients; `reminder_sent=True` if either channel succeeds; failures logged (no infinite retry)
+- [x] **Nav + dashboard:** Add "Connect Telegram" link to patient nav and dashboard quick actions
+- [x] **Admin:** Register `TelegramActivationCode` in admin; add telegram fields to `PatientAdmin`
+- [x] **Tests:** 25 tests covering code generation/expiry/single-use, connect page access control, link/unlink flows, expired/already-used/invalid code rejection, case-insensitive code, cross-patient linking prevention, reminder Telegram+email integration, Telegram failure isolation, unlinked patient unaffected
+- [x] **Dependencies:** Add `python-telegram-bot==21.0` and `requests==2.32.0` to `requirements.txt`
+- [x] **Env vars:** Add `TELEGRAM_BOT_TOKEN` and `TELEGRAM_BOT_USERNAME` to `.env.example`
+- [x] **Docs:** Add `requirements.md` Appendix A (Telegram Integration)
+
+### Decisions Made
+
+- **Bot process approach:** Long-polling via `python-telegram-bot` `Application.run_polling()`, as a Django management command (`python manage.py run_telegram_bot`). Webhook not chosen (would require public HTTPS URL not available in dev).
+- **Telegram sends alongside email:** Telegram is an *additional* channel, not a replacement. Both are attempted; `reminder_sent` is set if either succeeds.
+- **Patient.telegram_chat_id on the Patient model** (not a separate `TelegramLink` model): simpler, direct FK on the existing model, unique constraint enforced at the DB level, and the admin/templating is straightforward. A separate model would add indirection without benefit since each patient has at most one active link.
+- **Disconnect implemented on both sides:** `/disconnect` bot command and an "Unlink Telegram" button on the site's connect page.

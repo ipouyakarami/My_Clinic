@@ -297,3 +297,80 @@ For each risky behavior, an agent implementing it should write an automated test
 - Non-logged-in visitors can browse `/`, `/doctors/`, and doctor profile pages.
 - Secrets (DB, email, Django secret key) must load from environment variables only, never committed.
 - All server-side datetime logic uses `Asia/Tehran` consistently; store UTC in the DB, convert at the edges.
+
+---
+
+## Appendix A — Telegram Integration (v1)
+
+### A.1 Overview
+
+Patients may optionally link a Telegram account to their MyClinic account. Once linked, medication reminders are sent **via both email and Telegram** (in addition to, not instead of, email). Unlinked patients receive email-only reminders as before.
+
+### A.2 Environment Variables
+
+| Variable | Description |
+|---|---|
+| `TELEGRAM_BOT_TOKEN` | Bot API token from @BotFather. **Never commit a real token.** Add only to `.env`, document in `.env.example` with no real value. |
+| `TELEGRAM_BOT_USERNAME` | The bot's @username (e.g. `myyclinicbot`), without the `@` prefix. Used for generating links and displaying the bot reference. |
+
+### A.3 Data Model
+
+- **`Patient.telegram_chat_id`** (CharField, nullable, unique) — the Telegram `chat_id` of the linked chat, or null if not linked.
+- **`Patient.telegram_username`** (CharField, nullable) — display username from Telegram, if available.
+- **`TelegramActivationCode`** (new model in `medications`):
+  - `code` (CharField, unique) — short alphanumeric, ~8 chars, generated via `secrets.token_urlsafe`.
+  - `telegram_chat_id` (CharField) — the chat that requested the code.
+  - `telegram_username` (CharField, nullable) — captured at generation time.
+  - `created_at` (DateTimeField, auto_now_add)
+  - `expires_at` (DateTimeField) — 10-minute TTL from creation.
+  - `used_at` (DateTimeField, nullable) — set when consumed.
+  - `used_by_patient` (FK → Patient, nullable) — the patient who consumed the code.
+
+### A.4 Linking Flow
+
+1. **Patient views connect page** (`/telegram/connect/`, login required, patient-only): sees bot link (`t.me/<TELEGRAM_BOT_USERNAME>`) and, if already linked, the connected username + an "Unlink" button; if not linked, sees a code-entry form.
+2. **Patient opens bot in Telegram** and sends `/start`.
+3. **Bot generates an activation code** (reuses a still-valid unexpired unused code for that chat, else creates a new one) and replies with the code + 10-minute expiry + a link to the site.
+4. **Patient enters the code** in the site's "Connect to bot" form and submits.
+5. **Backend validates**: code exists, not expired, not already used, and the `chat_id` is not already linked to a *different* patient (race-protected via `select_for_update`). On success, sets `Patient.telegram_chat_id` / `telegram_username`, marks the code as used with `used_by_patient`, and shows "Connected" status.
+6. **If already linked**: `/start` in an already-linked chat replies "already connected" and does not generate a new code.
+
+### A.5 Bot Commands
+
+- `/start` — links or generates activation code (see A.4).
+- `/help` — shows bot description and available commands.
+- `/disconnect` — unlinks the patient's Telegram account (both bot-side and site-side; the site connect page also offers unlink).
+
+### A.6 Site Routes
+
+| Route | Method | Access | Purpose |
+|---|---|---|---|
+| `/telegram/connect/` | GET | patient login required | Show connect page (status + form) |
+| `/telegram/link/` | POST | patient login required | Submit activation code, link account |
+| `/telegram/disconnect/` | POST | patient login required | Unlink Telegram account |
+
+### A.7 Reminder Integration
+
+The existing `send_reminder_emails` Celery Beat task (per-minute) is extended:
+
+- After sending the email (existing behavior), if the patient has a `telegram_chat_id`, a Telegram message is sent via the Bot API `sendMessage` with the same "Don't forget your medications" copy adapted to Telegram format (HTML parse mode, list of medications).
+- `reminder_sent=True` is set if **either** channel succeeds (email or Telegram), so a failure on one channel doesn't prevent the other from being attempted next minute. If both fail, `reminder_sent` stays `False` and the failure is logged (same pattern as email failure handling — `EmailFailureLog`, no infinite retry).
+- Unlinked patients are unaffected: email only, no Telegram attempt.
+
+### A.8 Running the Bot Locally
+
+```bash
+# 1. Set TELEGRAM_BOT_TOKEN and TELEGRAM_BOT_USERNAME in .env
+# 2. Start the bot (long-polling, dev only):
+python manage.py run_telegram_bot
+```
+
+This management command initializes Django (`django.setup()` via the management framework), constructs a `python-telegram-bot` `Application`, registers the command handlers, and runs `application.run_polling()`.
+
+### A.9 Security Notes
+
+- The token `8887713057:AAHKC7tURutw3CeEBUsgU3yB4zaEUaWsxaI` was leaked in plaintext and **must be revoked via @BotFather** before this feature goes live. A new token must be generated and stored only in `TELEGRAM_BOT_TOKEN`.
+- The bot username is configurable via `TELEGRAM_BOT_USERNAME` (not hardcoded) to allow renaming via BotFather.
+- Activation codes are single-use, expire in 10 minutes, and are generated with `secrets` (cryptographically secure randomness).
+- The chat_id uniqueness constraint prevents two patients from linking the same Telegram chat.
+- Permission checks enforce that only the logged-in patient can link/unlink their own account.

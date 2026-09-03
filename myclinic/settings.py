@@ -33,7 +33,7 @@ SECRET_KEY = require_env("DJANGO_SECRET_KEY")
 
 DEBUG = True  # local dev only; flip off for any real deployment
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -161,6 +161,10 @@ SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000")
 # on the login page's "Demo accounts" panel. Change via DEMO_PASSWORD env if you
 # re-seed with a different password; the login panel reads the same value.
 DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "demo1234")
+
+# Telegram bot — token from @BotFather, username from the bot's info page
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "myyclinicbot")
 
 # Celery — broker + result backend over PostgreSQL via Kombu's SQLAlchemy
 # transport. No separate Redis service: the same DATABASE_URL that backs the

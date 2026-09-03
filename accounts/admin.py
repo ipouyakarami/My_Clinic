@@ -120,5 +120,7 @@ class DoctorAdmin(admin.ModelAdmin):
 
 @admin.register(Patient)
 class PatientAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "phone_number")
-    search_fields = ("user__email", "user__first_name", "user__last_name")
+    list_display = ("__str__", "phone_number", "telegram_username", "is_telegram_linked")
+    list_filter = ("telegram_chat_id",)
+    search_fields = ("user__email", "user__first_name", "user__last_name", "telegram_username")
+    readonly_fields = ("is_telegram_linked",)

@@ -128,6 +128,14 @@ def validate_image_file(value):
         raise ValidationError(_("File size must not exceed 5 MB."))
 
 
+class TelegramConnectForm(FormMixin, forms.Form):
+    activation_code = forms.CharField(
+        label=_("Activation Code"),
+        max_length=64,
+        help_text=_("The code you received from the MyClinic Telegram bot."),
+    )
+
+
 class DoctorProfileForm(forms.ModelForm):
     first_name = forms.CharField(label=_("First Name"), max_length=150)
     last_name = forms.CharField(label=_("Last Name"), max_length=150)

@@ -1,11 +1,14 @@
 import os
 
+from django.conf import settings
 from django.contrib import messages
+from django.db import transaction
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.views import View
 from django.views.generic import FormView, TemplateView, UpdateView
 
 from allauth.account.adapter import get_adapter
@@ -16,7 +19,7 @@ from medications.models import Medication, MedicationIntake
 
 from appointments.models import Appointment
 
-from .forms import DoctorProfileForm, PatientSignupForm, SetPasswordForm
+from .forms import DoctorProfileForm, PatientSignupForm, SetPasswordForm, TelegramConnectForm
 from .models import Doctor, Patient, User
 from .services import activate_account, create_patient_with_profile, send_activation_email
 
@@ -269,3 +272,124 @@ class DoctorProfileView(DoctorRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse("accounts:doctor_profile")
+
+
+class TelegramConnectView(LoginRequiredMixin, TemplateView):
+    """
+    Page where a logged-in patient can:
+      - See their Telegram connection status
+      - Enter an activation code received from the bot
+      - Unlink their Telegram account
+
+    Only accessible to patients. Each patient can only manage their own link.
+    """
+
+    template_name = "accounts/telegram_connect.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["bot_username"] = settings.TELEGRAM_BOT_USERNAME
+        context["bot_link"] = f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}"
+
+        if self.request.user.user_type == "patient":
+            patient = self.request.user.patient
+            context["patient"] = patient
+            context["is_linked"] = patient.is_telegram_linked
+        else:
+            context["is_linked"] = False
+
+        context["form"] = TelegramConnectForm()
+        return context
+
+
+class TelegramLinkView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """
+    Process the activation code form submission to link a patient's
+    Telegram account. Only patients can use this view.
+    """
+
+    template_name = "accounts/telegram_connect.html"
+    form_class = TelegramConnectForm
+
+    def test_func(self):
+        return self.request.user.user_type == "patient"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["initial"] = self.get_initial()
+        return kwargs
+
+    def get_initial(self):
+        return {}
+
+    def form_valid(self, form):
+        code = form.cleaned_data["activation_code"].strip().upper()
+        patient = self.request.user.patient
+
+        from medications.models import TelegramActivationCode
+
+        try:
+            with transaction.atomic():
+                try:
+                    activation = TelegramActivationCode.objects.select_for_update().get(code=code)
+                except TelegramActivationCode.DoesNotExist:
+                    form.add_error("activation_code", "This activation code is invalid.")
+                    return self.form_invalid(form)
+
+                # Check not already used
+                if activation.is_used:
+                    form.add_error("activation_code", "This activation code has already been used.")
+                    return self.form_invalid(form)
+
+                # Check not expired
+                if activation.is_expired:
+                    form.add_error("activation_code", "This activation code has expired. Please request a new one from the bot.")
+                    return self.form_invalid(form)
+
+                # Check if another patient already has this chat_id
+                existing = Patient.objects.filter(telegram_chat_id=activation.telegram_chat_id).first()
+                if existing and existing != patient:
+                    form.add_error("activation_code", "This Telegram account is already linked to another MyClinic account.")
+                    return self.form_invalid(form)
+
+                # Link the patient's account to this Telegram chat
+                patient.telegram_chat_id = activation.telegram_chat_id
+                patient.telegram_username = activation.telegram_username
+                patient.save(update_fields=["telegram_chat_id", "telegram_username"])
+
+                activation.used_at = timezone.now()
+                activation.used_by_patient = patient
+                activation.save(update_fields=["used_at", "used_by_patient"])
+
+        except Exception:
+            form.add_error("activation_code", "Failed to link your account. Please try again.")
+            return self.form_invalid(form)
+
+        messages.success(self.request, "Your Telegram account has been connected successfully!")
+        return redirect("accounts:telegram_connect")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["bot_username"] = settings.TELEGRAM_BOT_USERNAME
+        context["bot_link"] = f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}"
+        patient = self.request.user.patient
+        context["patient"] = patient
+        context["is_linked"] = patient.is_telegram_linked
+        return context
+
+
+class TelegramDisconnectView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """
+    Unlink the logged-in patient's Telegram account.
+    """
+
+    def test_func(self):
+        return self.request.user.user_type == "patient"
+
+    def post(self, request, *args, **kwargs):
+        patient = request.user.patient
+        patient.telegram_chat_id = None
+        patient.telegram_username = None
+        patient.save(update_fields=["telegram_chat_id", "telegram_username"])
+        messages.success(request, "Your Telegram account has been disconnected.")
+        return redirect("accounts:telegram_connect")

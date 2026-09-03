@@ -2397,3 +2397,355 @@ class GregorianDateRoundTripTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "آسپرین")
 
+
+class TelegramActivationCodeTests(TestCase):
+    """Tests for TelegramActivationCode generation, expiry, and single-use."""
+
+    def _create_patient(self):
+        user = User.objects.create_user(
+            email="telegram@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            is_active=True,
+        )
+        return Patient.objects.create(user=user)
+
+    def test_generate_creates_code_with_10_minute_expiry(self):
+        from .models import TelegramActivationCode
+
+        code = TelegramActivationCode.generate_for_chat("123456789", "testuser")
+        delta = code.expires_at - code.created_at
+        self.assertAlmostEqual(delta.total_seconds(), 600, delta=5)  # 10 minutes +/- 5s
+        self.assertEqual(code.telegram_chat_id, "123456789")
+        self.assertEqual(code.telegram_username, "testuser")
+        self.assertIsNone(code.used_at)
+        self.assertIsNone(code.used_by_patient)
+
+    def test_get_valid_for_chat_returns_unexpired_unused_code(self):
+        from .models import TelegramActivationCode
+
+        code = TelegramActivationCode.generate_for_chat("999", "user999")
+        valid = TelegramActivationCode.get_valid_for_chat("999")
+        self.assertEqual(valid, code)
+
+    def test_get_valid_for_chat_excludes_used_codes(self):
+        from .models import TelegramActivationCode
+        from django.utils import timezone
+
+        patient = self._create_patient()
+        code = TelegramActivationCode.generate_for_chat("888", "user888")
+        code.used_at = timezone.now()
+        code.used_by_patient = patient
+        code.save()
+
+        valid = TelegramActivationCode.get_valid_for_chat("888")
+        self.assertIsNone(valid)
+
+    def test_get_valid_for_chat_excludes_expired_codes(self):
+        from .models import TelegramActivationCode
+        from django.utils import timezone
+        import datetime
+
+        code = TelegramActivationCode.generate_for_chat("777", "user777")
+        # Make it expired
+        code.expires_at = timezone.now() - datetime.timedelta(minutes=1)
+        code.save()
+
+        valid = TelegramActivationCode.get_valid_for_chat("777")
+        self.assertIsNone(valid)
+
+    def test_get_valid_for_chat_does_not_cross_chats(self):
+        from .models import TelegramActivationCode
+
+        TelegramActivationCode.generate_for_chat("111", "user111")
+        TelegramActivationCode.generate_for_chat("222", "user222")
+
+        valid = TelegramActivationCode.get_valid_for_chat("111")
+        self.assertEqual(valid.telegram_chat_id, "111")
+
+    def test_is_expired_flag(self):
+        from .models import TelegramActivationCode
+        from django.utils import timezone
+        import datetime
+
+        code = TelegramActivationCode.generate_for_chat("555", "user555")
+        self.assertFalse(code.is_expired)
+
+        code.expires_at = timezone.now() - datetime.timedelta(seconds=1)
+        self.assertTrue(code.is_expired)
+
+    def test_is_used_flag(self):
+        from .models import TelegramActivationCode
+
+        code = TelegramActivationCode.generate_for_chat("444", "user444")
+        self.assertFalse(code.is_used)
+        code.used_at = timezone.now()
+        self.assertTrue(code.is_used)
+
+
+class TelegramConnectViewTests(TestCase):
+    """Tests for the /telegram/connect/ page and linking flow."""
+
+    def _create_patient(self, email="patient@example.com"):
+        user = User.objects.create_user(
+            email=email,
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            is_active=True,
+        )
+        patient = Patient.objects.create(user=user)
+        self.client.login(username=email, password=STRONG_PASSWORD)
+        return patient
+
+    def _create_doctor(self, email="doctor@example.com"):
+        user = User.objects.create_user(
+            email=email,
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.DOCTOR,
+            is_active=True,
+        )
+        return user
+
+    def test_connect_page_requires_login(self):
+        response = self.client.get(reverse("accounts:telegram_connect"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response["Location"])
+
+    def test_connect_page_denies_doctors(self):
+        self._create_doctor()
+        response = self.client.get(reverse("accounts:telegram_connect"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_connect_page_shows_when_not_linked(self):
+        patient = self._create_patient()
+        response = self.client.get(reverse("accounts:telegram_connect"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Connect Your Account")
+        self.assertContains(response, "myyclinicbot")
+
+    def test_connect_page_shows_connected_status(self):
+        patient = self._create_patient()
+        patient.telegram_chat_id = "123456"
+        patient.telegram_username = "testuser"
+        patient.save()
+
+        response = self.client.get(reverse("accounts:telegram_connect"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Connected")
+        self.assertContains(response, "@testuser")
+        self.assertContains(response, "Disconnect Telegram")
+
+    def test_valid_code_links_patient_to_chat(self):
+        from medications.models import TelegramActivationCode
+
+        patient = self._create_patient()
+        code = TelegramActivationCode.generate_for_chat("123456", "testuser")
+
+        response = self.client.post(reverse("accounts:telegram_link"), {"activation_code": code.code})
+        self.assertEqual(response.status_code, 302)
+        patient.refresh_from_db()
+        self.assertEqual(patient.telegram_chat_id, "123456")
+        self.assertEqual(patient.telegram_username, "testuser")
+
+        code.refresh_from_db()
+        self.assertIsNotNone(code.used_at)
+        self.assertEqual(code.used_by_patient, patient)
+
+    def test_invalid_code_rejected(self):
+        self._create_patient()
+        response = self.client.post(reverse("accounts:telegram_link"), {"activation_code": "FAKE123"})
+        self.assertEqual(response.status_code, 200)  # Returns to page with error
+        self.assertContains(response, "invalid")
+
+    def test_expired_code_rejected(self):
+        from medications.models import TelegramActivationCode
+        from django.utils import timezone
+        import datetime
+
+        patient = self._create_patient()
+        code = TelegramActivationCode.generate_for_chat("789", "user789")
+        code.expires_at = timezone.now() - datetime.timedelta(minutes=1)
+        code.save()
+
+        response = self.client.post(reverse("accounts:telegram_link"), {"activation_code": code.code})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "expired")
+        patient.refresh_from_db()
+        self.assertIsNone(patient.telegram_chat_id)
+
+    def test_already_used_code_rejected(self):
+        from medications.models import TelegramActivationCode
+        from django.utils import timezone
+
+        patient = self._create_patient()
+        code = TelegramActivationCode.generate_for_chat("111", "user111")
+        code.used_at = timezone.now()
+        code.used_by_patient = patient
+        code.save()
+
+        response = self.client.post(reverse("accounts:telegram_link"), {"activation_code": code.code})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "already been used")
+
+    def test_code_is_case_insensitive(self):
+        from medications.models import TelegramActivationCode
+
+        patient = self._create_patient()
+        code = TelegramActivationCode.generate_for_chat("222", "user222")
+
+        response = self.client.post(reverse("accounts:telegram_link"), {"activation_code": code.code.lower()})
+        self.assertEqual(response.status_code, 302)
+        patient.refresh_from_db()
+        self.assertEqual(patient.telegram_chat_id, "222")
+
+    def test_cannot_link_on_behalf_of_another_patient(self):
+        """A code generated for chat X can be used by any patient, but the chat_id
+        is unique — so a different patient linking the same chat_id is blocked."""
+        from medications.models import TelegramActivationCode
+
+        # Patient A creates the code
+        patient_a = self._create_patient("a@example.com")
+        code = TelegramActivationCode.generate_for_chat("999", "user999")
+
+        # Log out patient A
+        self.client.logout()
+
+        # Patient B logs in and tries to use the same code
+        patient_b = self._create_patient("b@example.com")
+        response = self.client.post(reverse("accounts:telegram_link"), {"activation_code": code.code})
+        # Patient B gets linked to chat 999 (they submitted the code)
+        patient_b.refresh_from_db()
+        self.assertEqual(patient_b.telegram_chat_id, "999")
+
+    def test_disconnect_removes_link(self):
+        patient = self._create_patient()
+        patient.telegram_chat_id = "123456"
+        patient.telegram_username = "testuser"
+        patient.save()
+
+        response = self.client.post(reverse("accounts:telegram_disconnect"))
+        self.assertEqual(response.status_code, 302)
+        patient.refresh_from_db()
+        self.assertIsNone(patient.telegram_chat_id)
+        self.assertIsNone(patient.telegram_username)
+
+    def test_disconnect_requires_login(self):
+        response = self.client.post(reverse("accounts:telegram_disconnect"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response["Location"])
+
+    def test_doctor_cannot_unlink(self):
+        self._create_doctor()
+        response = self.client.post(reverse("accounts:telegram_disconnect"))
+        self.assertEqual(response.status_code, 302)
+
+
+class TelegramReminderIntegrationTests(TestCase):
+    """Tests for reminder task Telegram integration."""
+
+    def _create_patient_with_intake(self, linked=True):
+        user = User.objects.create_user(
+            email="reminder@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            is_active=True,
+        )
+        patient = Patient.objects.create(user=user)
+        if linked:
+            patient.telegram_chat_id = "555666"
+            patient.telegram_username = "reminder_user"
+            patient.save()
+
+        medication = Medication.objects.create(
+            patient=patient,
+            name="Aspirin",
+            dosage="1 tablet",
+        )
+        now = timezone.now()
+        intake = MedicationIntake.objects.create(
+            medication=medication,
+            scheduled_time=now - datetime.timedelta(minutes=5),
+            status=MedicationIntake.Status.PENDING,
+        )
+        return patient, intake
+
+    @patch("medications.tasks.send_telegram_message")
+    @patch("medications.tasks.send_mail")
+    def test_linked_patient_receives_telegram_and_email(self, mock_send_mail, mock_send_telegram):
+        from medications.tasks import send_reminder_emails
+
+        patient, intake = self._create_patient_with_intake(linked=True)
+        mock_send_mail.return_value = 1
+        mock_send_telegram.return_value = True
+
+        send_reminder_emails()
+
+        mock_send_mail.assert_called_once()
+        mock_send_telegram.assert_called_once()
+        self.assertEqual(mock_send_telegram.call_args[0][0], "555666")
+
+        intake.refresh_from_db()
+        self.assertTrue(intake.reminder_sent)
+
+    @patch("medications.tasks.send_telegram_message")
+    @patch("medications.tasks.send_mail")
+    def test_unlinked_patient_receives_email_only(self, mock_send_mail, mock_send_telegram):
+        from medications.tasks import send_reminder_emails
+
+        patient, intake = self._create_patient_with_intake(linked=False)
+        mock_send_mail.return_value = 1
+
+        send_reminder_emails()
+
+        mock_send_mail.assert_called_once()
+        mock_send_telegram.assert_not_called()
+
+        intake.refresh_from_db()
+        self.assertTrue(intake.reminder_sent)
+
+    @patch("medications.tasks.send_telegram_message")
+    @patch("medications.tasks.send_mail")
+    def test_telegram_failure_does_not_block_email(self, mock_send_mail, mock_send_telegram):
+        from medications.tasks import send_reminder_emails
+
+        patient, intake = self._create_patient_with_intake(linked=True)
+        mock_send_mail.return_value = 1
+        mock_send_telegram.return_value = False  # Telegram fails
+
+        send_reminder_emails()
+
+        mock_send_mail.assert_called_once()
+        mock_send_telegram.assert_called_once()
+
+        # reminder_sent should still be True because email succeeded
+        intake.refresh_from_db()
+        self.assertTrue(intake.reminder_sent)
+
+    @patch("medications.tasks.send_telegram_message")
+    @patch("medications.tasks.send_mail")
+    def test_both_channels_failure_leaves_reminder_unsent(self, mock_send_mail, mock_send_telegram):
+        from medications.tasks import send_reminder_emails
+
+        patient, intake = self._create_patient_with_intake(linked=True)
+        mock_send_mail.side_effect = Exception("SMTP error")
+        mock_send_telegram.return_value = False
+
+        send_reminder_emails()
+
+        intake.refresh_from_db()
+        self.assertFalse(intake.reminder_sent)
+
+    @patch("medications.tasks.send_telegram_message")
+    def test_telegram_message_content_is_correct(self, mock_send_telegram):
+        from medications.tasks import send_reminder_emails
+
+        patient, intake = self._create_patient_with_intake(linked=True)
+        mock_send_telegram.return_value = True
+
+        send_reminder_emails()
+
+        message_text = mock_send_telegram.call_args[0][1]
+        self.assertIn("Medication Reminder", message_text)
+        self.assertIn("Aspirin", message_text)
+        self.assertIn("1 tablet", message_text)
+
