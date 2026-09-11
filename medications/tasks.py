@@ -164,9 +164,7 @@ def handle_intake_taken(intake_id):
     except MedicationIntake.DoesNotExist:
         return
     medication = intake.medication
-    if medication.current_inventory < 0:
-        medication.current_inventory = 0
-    else:
+    if medication.current_inventory > 0:
         medication.current_inventory -= 1
     medication.save(update_fields=["current_inventory"])
 

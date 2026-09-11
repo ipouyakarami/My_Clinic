@@ -337,12 +337,28 @@ class MedicationStep4Form(forms.Form):
 
 
 class MedicationStep5Form(forms.Form):
-    current_inventory = forms.IntegerField(label=_("Current Inventory"), min_value=0, initial=0)
+    current_inventory = forms.IntegerField(label=_("Current Inventory"), initial=0)
     refill_reminder_threshold = forms.IntegerField(
         label=_("Refill Reminder Threshold"),
         min_value=0,
         required=False,
     )
+
+    def __init__(self, *args, require_positive_inventory=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.require_positive_inventory = require_positive_inventory
+        if require_positive_inventory:
+            self.fields["current_inventory"].widget.attrs["min"] = "1"
+
+    def clean_current_inventory(self):
+        value = self.cleaned_data.get("current_inventory")
+        if value is None:
+            return value
+        if value < 0:
+            raise ValidationError(_("Current inventory cannot be negative."))
+        if self.require_positive_inventory and value < 1:
+            raise ValidationError(_("Current inventory must be more than 0."))
+        return value
 
 
 class MedicationStep6Form(forms.Form):

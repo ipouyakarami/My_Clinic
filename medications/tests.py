@@ -210,6 +210,65 @@ class BulkMarkTakenTests(TestCase):
             3,
         )
 
+    def test_bulk_mark_blocked_when_inventory_zero(self):
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        med = Medication.objects.create(patient=patient, name="دارو", unit="قرص", current_inventory=0)
+
+        now = timezone.now()
+        scheduled = now.replace(minute=0, second=0, microsecond=0) + timezone.timedelta(hours=1)
+        MedicationIntake.objects.create(
+            medication=med, scheduled_time=scheduled, status=MedicationIntake.Status.PENDING
+        )
+
+        self.client.force_login(user)
+        response = self.client.post(
+            reverse("medications:intake_mark_batch"),
+            {"scheduled_time": timezone.localtime(scheduled).strftime("%Y-%m-%d %H:%M:%S")},
+        )
+        self.assertRedirects(response, reverse("accounts:dashboard"))
+
+        med.refresh_from_db()
+        self.assertEqual(med.current_inventory, 0)
+        self.assertEqual(
+            MedicationIntake.objects.filter(medication=med, status=MedicationIntake.Status.TAKEN).count(),
+            0,
+        )
+
+        self.assertTrue(
+            any("Not enough inventory to take" in m.message for m in response.wsgi_request._messages)
+        )
+
+    def test_single_intake_taken_blocked_when_inventory_zero(self):
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        med = Medication.objects.create(patient=patient, name="دارو", unit="قرص", current_inventory=0)
+
+        now = timezone.now()
+        scheduled = now.replace(minute=0, second=0, microsecond=0) + timezone.timedelta(hours=1)
+        intake = MedicationIntake.objects.create(
+            medication=med, scheduled_time=scheduled, status=MedicationIntake.Status.PENDING
+        )
+
+        self.client.force_login(user)
+        response = self.client.get(reverse("medications:intake_taken", args=[intake.token]))
+        self.assertRedirects(response, reverse("accounts:dashboard"))
+
+        intake.refresh_from_db()
+        med.refresh_from_db()
+        self.assertEqual(intake.status, MedicationIntake.Status.PENDING)
+        self.assertEqual(med.current_inventory, 0)
+
+        self.assertTrue(
+            any("Not enough inventory to take" in m.message for m in response.wsgi_request._messages)
+        )
+
 
 class InventoryAndRefillTests(TestCase):
     def test_inventory_decrements_on_taken(self):
@@ -1585,6 +1644,31 @@ class MedicationViewTests(TestCase):
                 data["anchor_date"] = anchor_date
             data["anchor_time"] = anchor_time
         self.client.post(reverse("medications:medication_add"), data)
+
+    def test_add_medication_requires_inventory_greater_than_zero(self):
+        self._create_patient_for_dosage_tests()
+        self.client.post(reverse("medications:medication_add"), {"step": "1", "name": "آسپرین", "unit": "tablet"})
+        self.client.post(reverse("medications:medication_add"), {"step": "2", "frequency_type": "daily"})
+        self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "3", "frequency_type": "daily", "medication_times": "08:00"},
+        )
+        self.client.post(reverse("medications:medication_add"), {"step": "4", "dosage": "1"})
+
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "5", "current_inventory": 0, "refill_reminder_threshold": 5},
+        )
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertIn("Current inventory must be more than 0", content)
+
+        response = self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "5", "current_inventory": -2, "refill_reminder_threshold": 5},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Current inventory cannot be negative", response.content.decode("utf-8"))
 
 
 class DosageValidationTests(TestCase):

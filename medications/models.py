@@ -57,6 +57,12 @@ class Medication(models.Model):
         verbose_name = _("medication")
         verbose_name_plural = _("medications")
         ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(current_inventory__gte=0),
+                name="medication_current_inventory_non_negative",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.patient})"

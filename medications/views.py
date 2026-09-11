@@ -391,7 +391,7 @@ class MedicationWizardView(PatientRequiredMixin, View):
             return {"dosage": session_data.get("dosage", "")}
         if step == 5:
             return {
-                "current_inventory": session_data.get("current_inventory", 0),
+                "current_inventory": session_data.get("current_inventory"),
                 "refill_reminder_threshold": session_data.get("refill_reminder_threshold", ""),
             }
         return {}
@@ -415,6 +415,8 @@ class MedicationWizardView(PatientRequiredMixin, View):
 
         if step == 3:
             form = form_class(request.POST, existing_schedule=existing_schedule)
+        elif step == 5:
+            form = form_class(request.POST, require_positive_inventory=not bool(pk))
         else:
             form = form_class(request.POST)
 
@@ -507,13 +509,19 @@ class MedicationIntakeActionView(View):
             return redirect("accounts:dashboard")
 
         if action == "taken":
-            if intake.status == MedicationIntake.Status.PENDING:
+            if intake.medication.current_inventory <= 0:
+                messages.warning(
+                    request,
+                    f"Not enough inventory to take {intake.medication.name} "
+                    f"(current inventory: {intake.medication.current_inventory}). Please refill it first.",
+                )
+            elif intake.status == MedicationIntake.Status.PENDING:
                 intake.status = MedicationIntake.Status.TAKEN
                 intake.recorded_at = timezone.now()
                 intake.save(update_fields=["status", "recorded_at"])
                 from .tasks import handle_intake_taken
                 handle_intake_taken(intake.pk)
-            messages.success(request, "Medication intake recorded.")
+                messages.success(request, "Medication intake recorded.")
         elif action == "skipped":
             if intake.status == MedicationIntake.Status.PENDING:
                 intake.status = MedicationIntake.Status.SKIPPED
@@ -543,21 +551,35 @@ class MedicationIntakeBatchView(LoginRequiredMixin, View):
             medication__patient__user=request.user,
             scheduled_time=scheduled_time,
             status=MedicationIntake.Status.PENDING,
-        )
+        ).select_related("medication")
 
         count = 0
+        out_of_stock = []
         for intake in intakes:
-            if intake.status == MedicationIntake.Status.PENDING:
-                intake.status = MedicationIntake.Status.TAKEN
-                intake.recorded_at = timezone.now()
-                intake.save(update_fields=["status", "recorded_at"])
-                from .tasks import handle_intake_taken
-                handle_intake_taken(intake.pk)
-                count += 1
+            if intake.status != MedicationIntake.Status.PENDING:
+                continue
+            if intake.medication.current_inventory <= 0:
+                out_of_stock.append(
+                    f"{intake.medication.name} (current inventory: {intake.medication.current_inventory})"
+                )
+                continue
+            intake.status = MedicationIntake.Status.TAKEN
+            intake.recorded_at = timezone.now()
+            intake.save(update_fields=["status", "recorded_at"])
+            from .tasks import handle_intake_taken
+            handle_intake_taken(intake.pk)
+            count += 1
 
         if count:
             messages.success(request, f"{count} medication(s) marked as taken.")
-        else:
+        if out_of_stock:
+            messages.warning(
+                request,
+                "Not enough inventory to take: "
+                + ", ".join(dict.fromkeys(out_of_stock))
+                + ". Please refill them first.",
+            )
+        if not count and not out_of_stock:
             messages.info(request, "No pending medications to mark as taken.")
 
         return redirect("accounts:dashboard")
