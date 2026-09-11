@@ -36,6 +36,7 @@
             {% else %}
                 <ul class="hidden items-center gap-6 text-sm font-medium md:flex">
                     <li><a href="{% url 'core:doctor_list' %}" class="text-slate-600 hover:text-primary">Doctors</a></li>
+                    <li><a href="{% url 'medications:medication_list' %}" class="text-slate-600 hover:text-primary">Medications</a></li>
                 </ul>
             {% endif %}
 
@@ -114,6 +115,7 @@
             <div class="hidden border-t border-slate-100 bg-white px-4 py-3 md:hidden" data-nav-panel>
                 <ul class="flex flex-col gap-1 text-sm font-medium">
                     <li><a href="{% url 'core:doctor_list' %}" class="block rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100">Doctors</a></li>
+                    <li><a href="{% url 'medications:medication_list' %}" class="block rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100">Medications</a></li>
                 </ul>
             </div>
         {% endif %}
