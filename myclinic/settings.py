@@ -31,9 +31,11 @@ def require_env(name: str) -> str:
 
 SECRET_KEY = require_env("DJANGO_SECRET_KEY")
 
-DEBUG = True  # local dev only; flip off for any real deployment
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"  # flip off (DJANGO_DEBUG=false) for deployment
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
+if os.environ.get("RAILWAY_PUBLIC_DOMAIN"):
+    ALLOWED_HOSTS.append(os.environ["RAILWAY_PUBLIC_DOMAIN"])
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -58,6 +60,7 @@ SITE_ID = 1
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -139,23 +142,30 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+if not DEBUG:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Email — Gmail SMTP from env when provided, console backend otherwise (dev)
-if os.environ.get("EMAIL_HOST_USER"):
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = "smtp.gmail.com"
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = os.environ["EMAIL_HOST_USER"]
-    EMAIL_HOST_PASSWORD = os.environ["EMAIL_HOST_PASSWORD"]
-else:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Email — print to the server/console logs. No real SMTP in use.
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "MyClinic <noreply@myclinic.local>")
 
 # Base URL for building absolute links in emails sent outside a request context
-SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000")
+SITE_URL = os.environ.get(
+    "SITE_URL",
+    f"https://{os.environ['RAILWAY_PUBLIC_DOMAIN']}"
+    if os.environ.get("RAILWAY_PUBLIC_DOMAIN")
+    else "http://localhost:8000",
+)
 
 # Demo/dev-only convenience: password used by the seeded demo accounts and shown
 # on the login page's "Demo accounts" panel. Change via DEMO_PASSWORD env if you
