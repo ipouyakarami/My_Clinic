@@ -33,6 +33,7 @@ def extend_intake_window():
 
 import datetime
 import logging
+from decimal import Decimal
 
 from celery import shared_task
 from django.conf import settings
@@ -42,6 +43,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from .models import EmailFailureLog, Medication, MedicationIntake
+from .services import clean_decimal, parse_dosage_amount
 
 logger = logging.getLogger(__name__)
 
@@ -165,8 +167,12 @@ def handle_intake_taken(intake_id):
         return
     medication = intake.medication
     if medication.current_inventory > 0:
-        medication.current_inventory -= 1
-    medication.save(update_fields=["current_inventory"])
+        decrement = parse_dosage_amount(medication.dosage)
+        new_value = medication.current_inventory - decrement
+        if new_value < 0:
+            new_value = Decimal("0")
+        medication.current_inventory = clean_decimal(new_value)
+        medication.save(update_fields=["current_inventory"])
 
     if medication.refill_reminder_threshold is not None:
         if medication.current_inventory <= medication.refill_reminder_threshold and not medication.refill_reminder_sent:
@@ -180,12 +186,12 @@ def send_refill_reminder_email(medication):
         html_body = render_to_string("emails/refill_reminder.html", {
             "patient": medication.patient.user.get_full_name(),
             "medication": medication,
-            "remaining": medication.current_inventory,
+            "remaining": medication.display_inventory,
         })
         text_body = render_to_string("emails/refill_reminder.txt", {
             "patient": medication.patient.user.get_full_name(),
             "medication": medication,
-            "remaining": medication.current_inventory,
+            "remaining": medication.display_inventory,
         })
         send_mail(
             "Time to Refill Your Medication — MyClinic",

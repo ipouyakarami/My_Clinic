@@ -25,7 +25,7 @@
                                 <p class="text-sm text-slate-500">Dosage: {{ med.dosage }}</p>
                             {% endif %}
                             {% if med.current_inventory %}
-                                <p class="text-sm text-slate-500">Inventory: {{ med.current_inventory }}</p>
+                                <p class="text-sm text-slate-500">Inventory: {{ med.display_inventory }}</p>
                             {% endif %}
                         </div>
                         <div class="flex gap-2">

@@ -269,6 +269,78 @@ class BulkMarkTakenTests(TestCase):
             any("Not enough inventory to take" in m.message for m in response.wsgi_request._messages)
         )
 
+    def test_single_intake_taken_blocked_when_inventory_below_dosage(self):
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        med = Medication.objects.create(
+            patient=patient, name="دارو", unit="قرص", dosage="3", current_inventory=2,
+        )
+
+        now = timezone.now()
+        scheduled = now.replace(minute=0, second=0, microsecond=0) + timezone.timedelta(hours=1)
+        intake = MedicationIntake.objects.create(
+            medication=med, scheduled_time=scheduled, status=MedicationIntake.Status.PENDING
+        )
+
+        self.client.force_login(user)
+        response = self.client.get(reverse("medications:intake_taken", args=[intake.token]))
+        self.assertRedirects(response, reverse("accounts:dashboard"))
+
+        intake.refresh_from_db()
+        med.refresh_from_db()
+        self.assertEqual(intake.status, MedicationIntake.Status.PENDING)
+        self.assertEqual(med.current_inventory, 2)
+
+        self.assertTrue(
+            any("requires 3" in m.message for m in response.wsgi_request._messages)
+        )
+
+    def test_bulk_mark_decrements_by_dosage_and_blocks_partial_stock(self):
+        from decimal import Decimal
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        med = Medication.objects.create(
+            patient=patient, name="دارو", unit="قرص", dosage="2.5", current_inventory=5,
+        )
+
+        now = timezone.now()
+        scheduled = now.replace(minute=0, second=0, microsecond=0) + timezone.timedelta(hours=1)
+        for _ in range(3):
+            MedicationIntake.objects.create(
+                medication=med, scheduled_time=scheduled, status=MedicationIntake.Status.PENDING
+            )
+
+        self.client.force_login(user)
+        response = self.client.post(
+            reverse("medications:intake_mark_batch"),
+            {"scheduled_time": timezone.localtime(scheduled).strftime("%Y-%m-%d %H:%M:%S")},
+        )
+        self.assertRedirects(response, reverse("accounts:dashboard"))
+
+        med.refresh_from_db()
+        self.assertEqual(med.current_inventory, Decimal("0"))
+        self.assertEqual(
+            MedicationIntake.objects.filter(
+                medication=med, scheduled_time=scheduled, status=MedicationIntake.Status.TAKEN,
+            ).count(),
+            2,
+        )
+        self.assertEqual(
+            MedicationIntake.objects.filter(
+                medication=med, scheduled_time=scheduled, status=MedicationIntake.Status.PENDING,
+            ).count(),
+            1,
+        )
+        self.assertTrue(
+            any("Not enough inventory to take" in m.message for m in response.wsgi_request._messages)
+        )
+
 
 class InventoryAndRefillTests(TestCase):
     def test_inventory_decrements_on_taken(self):
@@ -385,6 +457,111 @@ class InventoryAndRefillTests(TestCase):
         medication.refresh_from_db()
         self.assertFalse(medication.refill_reminder_sent)
         self.assertEqual(medication.current_inventory, 9)
+
+    def test_inventory_decrements_by_dosage(self):
+        from decimal import Decimal
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        medication = Medication.objects.create(
+            patient=patient, name="آسپرین", unit="قرص",
+            dosage="2", current_inventory=10,
+        )
+        intake = MedicationIntake.objects.create(
+            medication=medication,
+            scheduled_time=timezone.now() + datetime.timedelta(hours=1),
+            status=MedicationIntake.Status.PENDING,
+        )
+        from .tasks import handle_intake_taken
+        handle_intake_taken(intake.pk)
+        medication.refresh_from_db()
+        self.assertEqual(medication.current_inventory, Decimal("8"))
+
+    def test_inventory_decrements_by_fractional_dosage(self):
+        from decimal import Decimal
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        medication = Medication.objects.create(
+            patient=patient, name="آسپرین", unit="ml",
+            dosage="0.5", current_inventory=10,
+        )
+        intake = MedicationIntake.objects.create(
+            medication=medication,
+            scheduled_time=timezone.now() + datetime.timedelta(hours=1),
+            status=MedicationIntake.Status.PENDING,
+        )
+        from .tasks import handle_intake_taken
+        handle_intake_taken(intake.pk)
+        medication.refresh_from_db()
+        self.assertEqual(medication.current_inventory, Decimal("9.5"))
+
+    def test_inventory_decrements_by_dosage_without_rounding(self):
+        from decimal import Decimal
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        medication = Medication.objects.create(
+            patient=patient, name="آسپرین", unit="میکروگرم",
+            dosage="0.125", current_inventory=1,
+        )
+        intake = MedicationIntake.objects.create(
+            medication=medication,
+            scheduled_time=timezone.now() + datetime.timedelta(hours=1),
+            status=MedicationIntake.Status.PENDING,
+        )
+        from .tasks import handle_intake_taken
+        handle_intake_taken(intake.pk)
+        medication.refresh_from_db()
+        self.assertEqual(medication.current_inventory, Decimal("0.875"))
+
+    def test_fractional_dosage_parses_persian_digits(self):
+        from decimal import Decimal
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        medication = Medication.objects.create(
+            patient=patient, name="آسپرین", unit="قرص",
+            dosage="۲.۵", current_inventory=10,
+        )
+        intake = MedicationIntake.objects.create(
+            medication=medication,
+            scheduled_time=timezone.now() + datetime.timedelta(hours=1),
+            status=MedicationIntake.Status.PENDING,
+        )
+        from .tasks import handle_intake_taken
+        handle_intake_taken(intake.pk)
+        medication.refresh_from_db()
+        self.assertEqual(medication.current_inventory, Decimal("7.5"))
+
+    def test_inventory_does_not_go_below_zero_when_dosage_exceeds_stock(self):
+        from decimal import Decimal
+        user = User.objects.create_user(
+            email="pat@example.com", password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT, first_name="مریم", last_name="صادقی", is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        medication = Medication.objects.create(
+            patient=patient, name="آسپرین", unit="قرص",
+            dosage="3", current_inventory=1,
+        )
+        intake = MedicationIntake.objects.create(
+            medication=medication,
+            scheduled_time=timezone.now() + datetime.timedelta(hours=1),
+            status=MedicationIntake.Status.PENDING,
+        )
+        from .tasks import handle_intake_taken
+        handle_intake_taken(intake.pk)
+        medication.refresh_from_db()
+        self.assertEqual(medication.current_inventory, Decimal("0"))
 
 
 class EmailFailureHandlingTests(TestCase):
@@ -1697,6 +1874,11 @@ class DosageValidationTests(TestCase):
     def test_valid_decimal_dosage_accepted(self):
         response = self._post_dosage("0.5")
         self.assertEqual(response.status_code, 302)
+
+    def test_too_precise_dosage_rejected(self):
+        response = self._post_dosage("0.1234567")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "decimal place")
 
     def test_valid_persian_digits_accepted(self):
         response = self._post_dosage("۲.۵")

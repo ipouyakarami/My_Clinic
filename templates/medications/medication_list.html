@@ -20,7 +20,7 @@
                             {% if med.dosage %}
                                 <p class="text-sm text-slate-500">Dosage: {{ med.dosage }}</p>
                             {% endif %}
-                            <p class="text-sm text-slate-500">Inventory: {{ med.current_inventory }}</p>
+                            <p class="text-sm text-slate-500">Inventory: {{ med.display_inventory }}</p>
                             {% if med.refill_reminder_threshold %}
                                 <p class="text-sm text-slate-500">Refill Threshold: {{ med.refill_reminder_threshold }}</p>
                             {% endif %}

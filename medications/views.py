@@ -28,6 +28,7 @@ from .forms import (
     MedicationStep6Form,
 )
 from .models import Medication, MedicationIntake, MedicationSchedule
+from .services import parse_dosage_amount
 
 
 class PatientRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -262,7 +263,7 @@ class MedicationWizardView(PatientRequiredMixin, View):
             "anchor_datetime": anchor_datetime,
             "start_date": start_date,
             "end_date": end_date,
-            "current_inventory": medication.current_inventory,
+            "current_inventory": medication.display_inventory,
             "refill_reminder_threshold": medication.refill_reminder_threshold,
         }
 
@@ -338,7 +339,7 @@ class MedicationWizardView(PatientRequiredMixin, View):
                     "name": medication.name,
                     "unit": medication.unit,
                     "dosage": medication.dosage,
-                    "current_inventory": medication.current_inventory,
+"current_inventory": str(medication.current_inventory),
                     "refill_reminder_threshold": medication.refill_reminder_threshold,
                     "frequency_type": schedule.frequency_type if schedule else "",
                     "medication_times": schedule.medication_times if schedule else [],
@@ -445,7 +446,7 @@ class MedicationWizardView(PatientRequiredMixin, View):
             elif step == 4:
                 session_data["dosage"] = form.cleaned_data["dosage"]
             elif step == 5:
-                session_data["current_inventory"] = form.cleaned_data["current_inventory"]
+                session_data["current_inventory"] = str(form.cleaned_data["current_inventory"])
                 session_data["refill_reminder_threshold"] = form.cleaned_data["refill_reminder_threshold"]
             elif step == 6:
                 patient = self._get_patient(request.user)
@@ -509,11 +510,14 @@ class MedicationIntakeActionView(View):
             return redirect("accounts:dashboard")
 
         if action == "taken":
-            if intake.medication.current_inventory <= 0:
+            medication = intake.medication
+            required = parse_dosage_amount(medication.dosage)
+            if medication.current_inventory < required:
                 messages.warning(
                     request,
-                    f"Not enough inventory to take {intake.medication.name} "
-                    f"(current inventory: {intake.medication.current_inventory}). Please refill it first.",
+                    f"Not enough inventory to take {medication.name} "
+                    f"(requires {required} {medication.unit}, current inventory: {medication.display_inventory}). "
+                    f"Please refill it first.",
                 )
             elif intake.status == MedicationIntake.Status.PENDING:
                 intake.status = MedicationIntake.Status.TAKEN
@@ -558,9 +562,12 @@ class MedicationIntakeBatchView(LoginRequiredMixin, View):
         for intake in intakes:
             if intake.status != MedicationIntake.Status.PENDING:
                 continue
-            if intake.medication.current_inventory <= 0:
+            intake.medication.refresh_from_db(fields=["current_inventory"])
+            required = parse_dosage_amount(intake.medication.dosage)
+            if intake.medication.current_inventory < required:
                 out_of_stock.append(
-                    f"{intake.medication.name} (current inventory: {intake.medication.current_inventory})"
+                    f"{intake.medication.name} (requires {required} {intake.medication.unit}, "
+                    f"current inventory: {intake.medication.display_inventory})"
                 )
                 continue
             intake.status = MedicationIntake.Status.TAKEN

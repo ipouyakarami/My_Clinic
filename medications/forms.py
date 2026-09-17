@@ -8,7 +8,14 @@ from django.utils.translation import gettext_lazy as _
 from accounts.models import Patient, Doctor, User
 from appointments.forms import GregorianDateField
 
-from .models import Medication, MedicationSchedule, MedicationIntake, UNIT_CHOICES
+from .models import (
+    Medication,
+    MedicationSchedule,
+    MedicationIntake,
+    UNIT_CHOICES,
+    INVENTORY_MAX_DIGITS,
+    INVENTORY_DECIMAL_PLACES,
+)
 
 
 FREQUENCY_CHOICES = MedicationSchedule.FrequencyType.choices
@@ -333,11 +340,23 @@ class MedicationStep4Form(forms.Form):
             raise ValidationError(_("Dosage must be a number."))
         if amount <= 0:
             raise ValidationError(_("Dosage must be a positive number."))
+        if amount.as_tuple().exponent < -INVENTORY_DECIMAL_PLACES:
+            raise ValidationError(
+                _(
+                    "Dosage can have at most %(places)s decimal place(s)."
+                    % {"places": INVENTORY_DECIMAL_PLACES}
+                )
+            )
         return str(amount)
 
 
 class MedicationStep5Form(forms.Form):
-    current_inventory = forms.IntegerField(label=_("Current Inventory"), initial=0)
+    current_inventory = forms.DecimalField(
+        label=_("Current Inventory"),
+        initial=0,
+        max_digits=INVENTORY_MAX_DIGITS,
+        decimal_places=INVENTORY_DECIMAL_PLACES,
+    )
     refill_reminder_threshold = forms.IntegerField(
         label=_("Refill Reminder Threshold"),
         min_value=0,

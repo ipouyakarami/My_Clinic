@@ -1,6 +1,7 @@
 import datetime
 import secrets
 import uuid
+from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
@@ -32,6 +33,9 @@ UNIT_CHOICES = [
     ("unit", _("Unit")),
 ]
 
+INVENTORY_MAX_DIGITS = 18
+INVENTORY_DECIMAL_PLACES = 6
+
 
 class Medication(models.Model):
     patient = models.ForeignKey(
@@ -43,7 +47,12 @@ class Medication(models.Model):
     name = models.CharField(_("medication name"), max_length=200)
     unit = models.CharField(_("unit"), max_length=100, choices=UNIT_CHOICES)
     dosage = models.CharField(_("dosage"), max_length=200, default="")
-    current_inventory = models.IntegerField(_("current inventory"), default=0)
+    current_inventory = models.DecimalField(
+        _("current inventory"),
+        max_digits=INVENTORY_MAX_DIGITS,
+        decimal_places=INVENTORY_DECIMAL_PLACES,
+        default=Decimal("0"),
+    )
     refill_reminder_threshold = models.IntegerField(
         _("refill reminder threshold"),
         null=True,
@@ -66,6 +75,14 @@ class Medication(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.patient})"
+
+    @property
+    def display_inventory(self):
+        """Inventory formatted without trailing zeros (e.g. '9.5', not '9.500000')."""
+        value = self.current_inventory
+        if value == 0:
+            return "0"
+        return format(value, "f").rstrip("0").rstrip(".")
 
 
 class MedicationSchedule(models.Model):
