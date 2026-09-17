@@ -7,9 +7,22 @@
     <title>MyClinic — Doctor Appointments & Medication Reminders</title>
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
     <link rel="stylesheet" href="{% static 'css/background.css' %}">
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
 </head>
 <body class="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased">
     <div class="background"></div>
+
+    <!-- Floating Brand and Register -->
+    <div class="fixed top-0 left-0 right-0 w-full px-8 py-6 flex justify-between items-center" style="z-index: 9999;">
+        <a href="/" class="auth-brand" style="position: fixed; left: 20px; transform: none; color: #000;">MyClinic</a>
+        <a href="{% url 'accounts:patient_signup' %}" style="position: fixed; right: 20px; top: 20px; display: inline-block; padding: 10px 20px; background: rgba(0,0,0,.9); box-shadow: 0 15px 25px rgba(0,0,0,.6); border-radius: 10px; font-weight: bold; color: #fff; font-size: 14px; text-decoration: none; text-transform: uppercase; overflow: hidden; transition: .5s; letter-spacing: 2px;">
+            <span style="position: absolute; display: block; top: 0; left: -100%; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #fff); animation: btn-anim1 1.5s linear infinite;"></span>
+            <span style="position: absolute; display: block; top: -100%; right: 0; width: 2px; height: 100%; background: linear-gradient(180deg, transparent, #fff); animation: btn-anim2 1.5s linear infinite; animation-delay: .375s;"></span>
+            <span style="position: absolute; display: block; bottom: 0; right: -100%; width: 100%; height: 2px; background: linear-gradient(270deg, transparent, #fff); animation: btn-anim3 1.5s linear infinite; animation-delay: .75s;"></span>
+            <span style="position: absolute; display: block; bottom: -100%; left: 0; width: 2px; height: 100%; background: linear-gradient(360deg, transparent, #fff); animation: btn-anim4 1.5s linear infinite; animation-delay: 1.125s;"></span>
+            Register
+        </a>
+    </div>
 
     <section class="relative flex w-full items-end justify-center overflow-hidden" style="height: 100vh;">
         <!-- Decorative Elements -->
@@ -29,7 +42,16 @@
                     </div>
 
                     <!-- Right Column: Hero Image -->
-                    <div class="relative flex items-end justify-center lg:justify-end">
+                    <div class="relative flex items-center justify-center lg:justify-end gap-4">
+                        <!-- Book Appointment Button -->
+                        <a href="{% url 'core:doctor_list' %}" style="display: inline-block; padding: 12px 24px; background: rgba(0,0,0,.9); box-shadow: 0 15px 25px rgba(0,0,0,.6); border-radius: 10px; font-weight: bold; color: #fff; font-size: 14px; text-decoration: none; text-transform: uppercase; overflow: hidden; transition: .5s; letter-spacing: 2px; position: relative; height: fit-content;">
+                            <span style="position: absolute; display: block; top: 0; left: -100%; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #fff); animation: btn-anim1 1.5s linear infinite;"></span>
+                            <span style="position: absolute; display: block; top: -100%; right: 0; width: 2px; height: 100%; background: linear-gradient(180deg, transparent, #fff); animation: btn-anim2 1.5s linear infinite; animation-delay: .375s;"></span>
+                            <span style="position: absolute; display: block; bottom: 0; right: -100%; width: 100%; height: 2px; background: linear-gradient(270deg, transparent, #fff); animation: btn-anim3 1.5s linear infinite; animation-delay: .75s;"></span>
+                            <span style="position: absolute; display: block; bottom: -100%; left: 0; width: 2px; height: 100%; background: linear-gradient(360deg, transparent, #fff); animation: btn-anim4 1.5s linear infinite; animation-delay: 1.125s;"></span>
+                            Book Appointment
+                        </a>
+
                         <div class="relative">
                             <!-- Floating Card 1 -->
                             <div class="absolute -top-4 -left-4 bg-white rounded-2xl shadow-xl p-4 animate-float hidden sm:block" style="animation-delay: 0s;">
@@ -66,6 +88,15 @@
                                  alt="Healthcare Professional"
                                  class="relative z-10 w-full max-w-md h-auto object-contain object-bottom drop-shadow-2xl">
                         </div>
+
+                        <!-- Set Medication Button -->
+                        <a href="{% url 'medications:medication_list' %}" style="display: inline-block; padding: 12px 24px; background: rgba(0,0,0,.9); box-shadow: 0 15px 25px rgba(0,0,0,.6); border-radius: 10px; font-weight: bold; color: #fff; font-size: 14px; text-decoration: none; text-transform: uppercase; overflow: hidden; transition: .5s; letter-spacing: 2px; position: relative; height: fit-content;">
+                            <span style="position: absolute; display: block; top: 0; left: -100%; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #fff); animation: btn-anim1 1.5s linear infinite;"></span>
+                            <span style="position: absolute; display: block; top: -100%; right: 0; width: 2px; height: 100%; background: linear-gradient(180deg, transparent, #fff); animation: btn-anim2 1.5s linear infinite; animation-delay: .375s;"></span>
+                            <span style="position: absolute; display: block; bottom: 0; right: -100%; width: 100%; height: 2px; background: linear-gradient(270deg, transparent, #fff); animation: btn-anim3 1.5s linear infinite; animation-delay: .75s;"></span>
+                            <span style="position: absolute; display: block; bottom: -100%; left: 0; width: 2px; height: 100%; background: linear-gradient(360deg, transparent, #fff); animation: btn-anim4 1.5s linear infinite; animation-delay: 1.125s;"></span>
+                            Set Medication
+                        </a>
                     </div>
                 </div>
             </div>
