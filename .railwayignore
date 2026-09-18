@@ -7,3 +7,4 @@ staticfiles
 .kilo
 tools
 celerybeat-schedule*
+.env
