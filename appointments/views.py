@@ -34,7 +34,7 @@ class WorkingHoursCreateView(DoctorRequiredMixin, FormView):
 
     def _cleanup_expired_slots(self, doctor, exclude_pks=None):
         now = timezone.now()
-        today = now.date()
+        today = timezone.localdate()
         expired_qs = TimeSlot.objects.filter(
             doctor=doctor,
             date__lte=today,
@@ -61,7 +61,7 @@ class WorkingHoursCreateView(DoctorRequiredMixin, FormView):
             slots_qs = slots_qs.filter(date=filter_date)
             context["selected_date"] = filter_date
         else:
-            slots_qs = slots_qs.filter(date__gte=timezone.now().date())
+            slots_qs = slots_qs.filter(date__gte=timezone.localdate())
             context["selected_date"] = ""
         context["upcoming_slots"] = slots_qs.order_by("date", "start_time")[:50]
 
@@ -231,7 +231,7 @@ class DoctorTodayAppointmentsView(DoctorRequiredMixin, ListView):
     context_object_name = "appointments"
 
     def get_queryset(self):
-        today = timezone.now().date()
+        today = timezone.localdate()
         return Appointment.objects.filter(
             time_slot__doctor__user=self.request.user,
             time_slot__date=today,

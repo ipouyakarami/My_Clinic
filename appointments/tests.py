@@ -304,7 +304,7 @@ class DoctorAppointmentTests(AppointmentTestCase):
     def test_doctor_sees_today_appointments(self):
         doc_user, doctor = self._create_doctor()
         pat_user, patient = self._create_patient()
-        today = timezone.now().date()
+        today = timezone.localdate()
         slot = self._create_slot(doctor, date=today, start="10:00", end="10:30")
         Appointment.objects.create(patient=patient, time_slot=slot)
 

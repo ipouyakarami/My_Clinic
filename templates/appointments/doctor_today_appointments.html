@@ -10,7 +10,7 @@
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {% for appointment in appointments %}
                     <a href="{% url 'appointments:appointment_detail' pk=appointment.pk %}"
-                       class="service-box group block rounded-2xl p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-6">
+                       class="service-box group flex flex-col gap-4">
                         <div class="flex items-center gap-4">
                             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold text-white">
                                 {{ appointment.patient.user.first_name|slice:":1"|default:"P" }}
@@ -22,28 +22,28 @@
                                 <p class="mt-1 text-sm text-slate-400">{{ appointment.patient.user.get_full_name }}</p>
                             </div>
                         </div>
-                        <div class="mt-4 grid gap-2 text-sm">
+                        <div class="grid gap-2 text-sm">
                             <p class="text-slate-300">
-                                <span class="font-medium text-slate-500">Time:</span>
-                                {{ appointment.time_slot.start_time|time:"H:i" }} to {{ appointment.time_slot.end_time|time:"H:i" }}
+                                <span class="font-medium text-slate-500">Date:</span>
+                                {{ appointment.time_slot.date|date:"Y/m/d" }} — {{ appointment.time_slot.start_time|time:"H:i" }} to {{ appointment.time_slot.end_time|time:"H:i" }}
                             </p>
                             <span class="inline-block w-max rounded-full px-3 py-1 text-xs font-medium
-                                {% if appointment.status == 'active' %}bg-accent text-primary{% endif %}
+                                {% if appointment.status == 'active' %}bg-accent text-black{% endif %}
                                 {% if appointment.status == 'completed' %}bg-emerald-50 text-emerald-700{% endif %}
                                 {% if appointment.status == 'cancelled' %}bg-red-50 text-red-700{% endif %}
                             ">
                                 {{ appointment.get_status_display }}
                             </span>
                         </div>
-                        <div class="mt-4">
+                        <div class="mt-1">
                             <span class="text-sm font-medium text-primary group-hover:text-primary/80">Details & Edit &rarr;</span>
                         </div>
                     </a>
                 {% endfor %}
             </div>
         {% else %}
-            <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-                <p class="text-slate-500">No appointments scheduled for today.</p>
+            <div class="service-box p-8 text-center">
+                <p class="text-slate-400">No appointments scheduled for today.</p>
             </div>
         {% endif %}
     </div>

@@ -56,7 +56,7 @@ class DoctorDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["available_slots"] = (
-            TimeSlot.objects.filter(doctor=self.object, is_booked=False, date__gte=timezone.now().date())
+            TimeSlot.objects.filter(doctor=self.object, is_booked=False, date__gte=timezone.localdate())
             .order_by("date", "start_time")
             .select_related("doctor", "doctor__user")
         )

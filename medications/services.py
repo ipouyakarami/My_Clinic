@@ -69,7 +69,7 @@ def get_todays_intakes_for_patient(patient):
     """
     now = timezone.now()
     tz = timezone.get_current_timezone()
-    today = now.date()
+    today = timezone.localdate()
 
     start_dt = timezone.make_aware(
         timezone.datetime.combine(today, timezone.datetime.min.time()),

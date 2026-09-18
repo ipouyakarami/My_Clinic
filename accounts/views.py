@@ -169,7 +169,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         now = timezone.now()
-        today = now.date()
+        today = timezone.localdate()
 
         if user.user_type == "patient":
             from accounts.models import Patient
