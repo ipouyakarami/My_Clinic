@@ -642,7 +642,8 @@ class EmailFailureHandlingTests(TestCase):
         schedule = MedicationSchedule.objects.create(
             medication=medication,
             frequency_type=MedicationSchedule.FrequencyType.DAILY,
-            medication_times=["08:00"],
+            medication_times=["00:01"],
+            start_date=timezone.localdate() - datetime.timedelta(days=1),
         )
 
         _generate_intakes_for_schedule(schedule)
@@ -2103,7 +2104,7 @@ class MedicationCalendarTests(TestCase):
         )
         from medications.views import _generate_intakes_for_schedule
         _generate_intakes_for_schedule(schedule)
-        date_str = timezone.now().date().strftime("%Y/%m/%d")
+        date_str = timezone.localdate().strftime("%Y/%m/%d")
         response = self.client.get(reverse("medications:medication_calendar") + f"?date={date_str}")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "آسپرین")
@@ -2119,7 +2120,7 @@ class MedicationCalendarTests(TestCase):
         from medications.views import _generate_intakes_for_schedule
         _generate_intakes_for_schedule(schedule1)
         _generate_intakes_for_schedule(schedule2)
-        date_str = timezone.now().date().strftime("%Y/%m/%d")
+        date_str = timezone.localdate().strftime("%Y/%m/%d")
         response = self.client.get(reverse("medications:medication_calendar") + f"?date={date_str}")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "دارو۱")
@@ -2146,12 +2147,53 @@ class MedicationCalendarTests(TestCase):
         )
         from medications.views import _generate_intakes_for_schedule
         _generate_intakes_for_schedule(schedule)
-        date_str = timezone.now().date().strftime("%Y/%m/%d")
+        date_str = timezone.localdate().strftime("%Y/%m/%d")
         response = self.client.get(reverse("medications:medication_calendar") + f"?date={date_str}")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "08:00")
         self.assertContains(response, "14:00")
         self.assertContains(response, "20:00")
+
+    def test_calendar_rejects_past_dates(self):
+        patient, user = self._create_patient()
+        self.client.force_login(user)
+        past_date = (timezone.localdate() - datetime.timedelta(days=1)).strftime("%Y/%m/%d")
+        response = self.client.get(reverse("medications:medication_calendar") + f"?date={past_date}")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Past dates are not available")
+        self.assertNotContains(response, "No medications scheduled for this date")
+
+    def test_edit_clears_old_schedule_intakes_from_today(self):
+        patient, user = self._create_patient()
+        self.client.force_login(user)
+        medication = Medication.objects.create(patient=patient, name="آسپرین", unit="قرص")
+        schedule = MedicationSchedule.objects.create(
+            medication=medication,
+            frequency_type=MedicationSchedule.FrequencyType.DAILY,
+            medication_times=["08:00", "20:00"],
+        )
+        from medications.views import _clear_old_schedule_intakes, _generate_intakes_for_schedule
+        _generate_intakes_for_schedule(schedule)
+        self.assertGreater(MedicationIntake.objects.filter(medication=medication).count(), 0)
+
+        _clear_old_schedule_intakes(medication)
+        self.assertEqual(
+            MedicationIntake.objects.filter(medication=medication).count(),
+            0,
+            "All intakes from today onward must be removed on edit",
+        )
+
+        schedule.medication_times = ["09:00"]
+        schedule.save()
+        _generate_intakes_for_schedule(schedule)
+        new_times = set(
+            MedicationIntake.objects.filter(medication=medication).values_list(
+                "scheduled_time", flat=True
+            )
+        )
+        self.assertTrue(new_times, "New schedule must regenerate intakes")
+        for dt in new_times:
+            self.assertEqual(timezone.localtime(dt).strftime("%H:%M"), "09:00")
 
     def test_calendar_gregorian_date_queries(self):
         patient, user = self._create_patient()
@@ -2164,12 +2206,12 @@ class MedicationCalendarTests(TestCase):
         )
         from medications.views import _generate_intakes_for_schedule
         _generate_intakes_for_schedule(schedule)
-        date_str = timezone.now().date().strftime("%Y/%m/%d")
+        date_str = timezone.localdate().strftime("%Y/%m/%d")
         response = self.client.get(reverse("medications:medication_calendar") + f"?date={date_str}")
         self.assertEqual(response.status_code, 200)
         intake = MedicationIntake.objects.filter(
             medication=medication,
-            scheduled_time__date=timezone.now().date(),
+            scheduled_time__date=timezone.localdate(),
         ).first()
         self.assertIsNotNone(intake)
 
@@ -2193,7 +2235,7 @@ class MedicationCalendarTests(TestCase):
         )
         from medications.views import _generate_intakes_for_schedule
         _generate_intakes_for_schedule(schedule)
-        date_str = timezone.now().date().strftime("%Y/%m/%d")
+        date_str = timezone.localdate().strftime("%Y/%m/%d")
         response = self.client.get(reverse("medications:medication_calendar") + f"?date={date_str}")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, date_str)
@@ -2217,7 +2259,7 @@ class MedicationCalendarTests(TestCase):
         from medications.views import _generate_intakes_for_schedule
         _generate_intakes_for_schedule(schedule1)
         _generate_intakes_for_schedule(schedule2)
-        date_str = timezone.now().date().strftime("%Y/%m/%d")
+        date_str = timezone.localdate().strftime("%Y/%m/%d")
         response = self.client.get(reverse("medications:medication_calendar") + f"?date={date_str}")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "آسپرین")
@@ -2231,7 +2273,7 @@ class MedicationCalendarTests(TestCase):
         self.client.force_login(user)
         medication = Medication.objects.create(patient=patient, name="آسپرین", unit="قرص", dosage="۱ قرص")
         tz = timezone.get_current_timezone()
-        today = timezone.now().date()
+        today = timezone.localdate()
         from django.utils import timezone as tz_utils
         for status, hh, mm in [
             ("pending", 8, 0),
@@ -2259,7 +2301,7 @@ class MedicationCalendarTests(TestCase):
         self.client.force_login(user)
         medication = Medication.objects.create(patient=patient, name="آسپرین", unit="قرص", dosage="۱ قرص")
         tz = timezone.get_current_timezone()
-        today = timezone.now().date()
+        today = timezone.localdate()
         from django.utils import timezone as tz_utils
         midnight = tz_utils.make_aware(
             datetime.datetime.combine(today, datetime.time(0, 0)), tz
@@ -2304,7 +2346,7 @@ class MedicationCalendarTests(TestCase):
         )
         from medications.views import _generate_intakes_for_schedule
         _generate_intakes_for_schedule(schedule)
-        date_str = timezone.now().date().strftime("%Y/%m/%d")
+        date_str = timezone.localdate().strftime("%Y/%m/%d")
         response = self.client.get(reverse("medications:medication_calendar") + f"?date={date_str}")
         self.assertEqual(response.status_code, 200)
         self.assertIn("date_display", response.context)
@@ -2318,7 +2360,7 @@ class MedicationCalendarTests(TestCase):
         self.client.force_login(user)
         medication = Medication.objects.create(patient=patient, name="آسپرین", unit="قرص", dosage="۱ قرص")
         tz = timezone.get_current_timezone()
-        today = timezone.now().date()
+        today = timezone.localdate()
         from django.utils import timezone as tz_utils
         for hh, mm in [(20, 0), (8, 0), (14, 0)]:
             dt = tz_utils.make_aware(
@@ -2355,7 +2397,7 @@ class MedicationCalendarTests(TestCase):
         med1 = Medication.objects.create(patient=patient1, name="داروی-یک", unit="قرص")
         med2 = Medication.objects.create(patient=patient2, name="داروی-دو", unit="قرص")
         tz = timezone.get_current_timezone()
-        today = timezone.now().date()
+        today = timezone.localdate()
         from django.utils import timezone as tz_utils
         for med in [med1, med2]:
             dt = tz_utils.make_aware(
@@ -2383,11 +2425,7 @@ class MedicationCalendarTests(TestCase):
         import datetime as dt_module
 
         test_dates = [
-            dt_module.date(2026, 1, 15),
-            dt_module.date(2026, 3, 1),
-            dt_module.date(2026, 6, 10),
-            dt_module.date(2026, 9, 5),
-            dt_module.date(2026, 12, 20),
+            timezone.localdate() + datetime.timedelta(days=n) for n in (5, 35, 65, 95, 125)
         ]
 
         for test_date in test_dates:
@@ -2411,7 +2449,7 @@ class MedicationCalendarTests(TestCase):
             self.assertEqual(scheduled.year, test_date.year, f"Year mismatch for {date_str}")
 
     def test_calendar_month_boundary_first_month(self):
-        """January should be handled correctly."""
+        """The first day of a month should be handled correctly."""
         patient, user = self._create_patient()
         self.client.force_login(user)
         medication = Medication.objects.create(patient=patient, name="دارو", unit="قرص")
@@ -2419,7 +2457,8 @@ class MedicationCalendarTests(TestCase):
         from django.utils import timezone as tz_utils
         import datetime as dt_module
 
-        test_date = dt_module.date(2026, 1, 15)
+        next_month_first = (timezone.localdate().replace(day=28) + dt_module.timedelta(days=4)).replace(day=1)
+        test_date = next_month_first
         dt = tz_utils.make_aware(
             datetime.datetime.combine(test_date, datetime.time(10, 0)), tz
         )
@@ -2433,7 +2472,7 @@ class MedicationCalendarTests(TestCase):
         self.assertEqual(intakes.count(), 1)
 
     def test_calendar_month_boundary_last_month(self):
-        """December should be handled correctly."""
+        """The last day of a month should be handled correctly."""
         patient, user = self._create_patient()
         self.client.force_login(user)
         medication = Medication.objects.create(patient=patient, name="دارو", unit="قرص")
@@ -2441,7 +2480,9 @@ class MedicationCalendarTests(TestCase):
         from django.utils import timezone as tz_utils
         import datetime as dt_module
 
-        test_date = dt_module.date(2026, 12, 5)
+        first_of_month_after_next = (timezone.localdate().replace(day=28) + dt_module.timedelta(days=4)).replace(day=1)
+        last_day_next_month = (first_of_month_after_next + dt_module.timedelta(days=35)).replace(day=1) - dt_module.timedelta(days=1)
+        test_date = last_day_next_month
         dt = tz_utils.make_aware(
             datetime.datetime.combine(test_date, datetime.time(10, 0)), tz
         )
@@ -2463,8 +2504,8 @@ class MedicationCalendarTests(TestCase):
         from django.utils import timezone as tz_utils
         import datetime as dt_module
 
-        prev_year = dt_module.date(2025, 12, 20)
-        next_year = dt_module.date(2026, 1, 10)
+        prev_year = dt_module.date(timezone.localdate().year, 12, 31)
+        next_year = dt_module.date(timezone.localdate().year + 1, 1, 10)
 
         for test_date in [prev_year, next_year]:
             dt = tz_utils.make_aware(
@@ -2485,20 +2526,13 @@ class MedicationCalendarTests(TestCase):
         self.client.force_login(user)
         import datetime as dt_module
 
-        test_cases = [
-            (2026, 1, "January"),
-            (2026, 2, "February"),
-            (2026, 3, "March"),
-            (2026, 4, "April"),
-            (2026, 5, "May"),
-            (2026, 6, "June"),
-            (2026, 7, "July"),
-            (2026, 8, "August"),
-            (2026, 9, "September"),
-            (2026, 10, "October"),
-            (2026, 11, "November"),
-            (2026, 12, "December"),
-        ]
+        base_year, base_month = timezone.localdate().year, timezone.localdate().month
+        test_cases = []
+        for offset in range(1, 13):
+            m = base_month - 1 + offset
+            year = base_year + m // 12
+            month = m % 12 + 1
+            test_cases.append((year, month, dt_module.date(year, month, 1).strftime("%B")))
 
         for year, month, expected_name in test_cases:
             test_date = dt_module.date(year, month, 1)
@@ -2525,14 +2559,18 @@ class MedicationCalendarTests(TestCase):
         )
         from medications.views import _generate_intakes_for_schedule
         _generate_intakes_for_schedule(schedule)
-        date_str = "2026/08/25"
+        dt_module = __import__("datetime")
+        today = timezone.localdate()
+        m = today.month % 12 + 1
+        y = today.year + (1 if today.month == 12 else 0)
+        date_str = f"{y:04d}/{m:02d}/25"
         response = self.client.get(reverse("medications:medication_calendar") + f"?date={date_str}")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["year"], 2026)
-        self.assertEqual(response.context["month"], 8)
+        self.assertEqual(response.context["year"], y)
+        self.assertEqual(response.context["month"], m)
         self.assertEqual(response.context["day"], 25)
         content = response.content.decode("utf-8")
-        self.assertIn("new Date(2026, 7, 25)", content)
+        self.assertIn(f"new Date({y}, {m - 1}, 25)", content)
 
 
 class GregorianDateRoundTripTests(TestCase):
@@ -2632,7 +2670,7 @@ class GregorianDateRoundTripTests(TestCase):
             medication_times=["08:00"],
         )
 
-        test_date = dt_module.date(2026, 8, 25)
+        test_date = timezone.localdate() + dt_module.timedelta(days=30)
         tz = timezone.get_current_timezone()
         dt = timezone.make_aware(datetime.datetime.combine(test_date, datetime.time(8, 0)), tz)
         MedicationIntake.objects.create(medication=medication, scheduled_time=dt, status="pending")
@@ -2658,7 +2696,7 @@ class GregorianDateRoundTripTests(TestCase):
         from medications.views import _generate_intakes_for_schedule
         _generate_intakes_for_schedule(schedule)
 
-        date_str = timezone.now().date().strftime("%Y/%m/%d")
+        date_str = timezone.localdate().strftime("%Y/%m/%d")
         response = self.client.get(reverse("medications:medication_calendar_date", args=[date_str]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "آسپرین")

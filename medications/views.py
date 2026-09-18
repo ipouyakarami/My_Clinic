@@ -61,7 +61,7 @@ def _generate_intakes_for_schedule(schedule, horizon_days=7):
 
     now = timezone.now()
     tz = timezone.get_current_timezone()
-    today = now.date()
+    today = timezone.localdate()
     horizon = today + datetime.timedelta(days=horizon_days)
 
     anchor = schedule.anchor_datetime
@@ -140,6 +140,19 @@ def _generate_intakes_for_schedule(schedule, horizon_days=7):
 
     MedicationIntake.objects.bulk_create(intakes, ignore_conflicts=True)
     return intakes
+
+
+def _clear_old_schedule_intakes(medication):
+    """Remove every intake from today onward so an edited medication's old
+    schedule times are replaced by its new ones (keeps past history intact)."""
+    today_start = timezone.make_aware(
+        datetime.datetime.combine(timezone.localdate(), datetime.time(0, 0)),
+        timezone.get_current_timezone(),
+    )
+    MedicationIntake.objects.filter(
+        medication=medication,
+        scheduled_time__gte=today_start,
+    ).delete()
 
 
 class MedicationListView(PatientRequiredMixin, ListView):
@@ -314,11 +327,7 @@ class MedicationWizardView(PatientRequiredMixin, View):
         schedule.save()
 
         if is_edit:
-            MedicationIntake.objects.filter(
-                medication=medication,
-                status=MedicationIntake.Status.PENDING,
-                scheduled_time__gte=timezone.now(),
-            ).delete()
+            _clear_old_schedule_intakes(medication)
 
         _generate_intakes_for_schedule(schedule)
         return medication, schedule
@@ -624,22 +633,25 @@ class MedicationCalendarView(PatientRequiredMixin, TemplateView):
                 y, m, d = map(int, parts)
                 from datetime import date
                 selected_date = date(y, m, d)
-                date_display = selected_date.strftime("%B %d, %Y")
-                context["year"] = y
-                context["month"] = m
-                context["day"] = d
-                tz = timezone.get_current_timezone()
-                start_dt = timezone.make_aware(
-                    datetime.datetime.combine(selected_date, datetime.time(0, 0)),
-                    tz,
-                )
-                end_dt = start_dt + datetime.timedelta(days=1)
-                intakes = MedicationIntake.objects.filter(
-                    medication__patient__user=self.request.user,
-                    scheduled_time__gte=start_dt,
-                    scheduled_time__lt=end_dt,
-                ).select_related("medication").order_by("scheduled_time")
-                intakes_by_time = self._group_intakes_by_time(intakes)
+                if selected_date < timezone.localdate():
+                    date_error = "Past dates are not available. Please select today or a later date."
+                else:
+                    date_display = selected_date.strftime("%B %d, %Y")
+                    context["year"] = y
+                    context["month"] = m
+                    context["day"] = d
+                    tz = timezone.get_current_timezone()
+                    start_dt = timezone.make_aware(
+                        datetime.datetime.combine(selected_date, datetime.time(0, 0)),
+                        tz,
+                    )
+                    end_dt = start_dt + datetime.timedelta(days=1)
+                    intakes = MedicationIntake.objects.filter(
+                        medication__patient__user=self.request.user,
+                        scheduled_time__gte=start_dt,
+                        scheduled_time__lt=end_dt,
+                    ).select_related("medication").order_by("scheduled_time")
+                    intakes_by_time = self._group_intakes_by_time(intakes)
             except (ValueError, TypeError):
                 date_error = "Invalid date. Please select a valid Gregorian date."
         context["selected_date"] = date_str
