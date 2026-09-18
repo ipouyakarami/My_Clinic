@@ -2,15 +2,25 @@
 
 {% block title %}Check Your Email — MyClinic{% endblock %}
 
+{% block page_background %}<div class="container container-dark"></div>{% endblock %}
+{% block header %}{% include "accounts/_auth_brand.html" %}{% endblock %}
+{% block footer %}{% endblock %}
+
 {% block content %}
-    <div class="mx-auto max-w-md rounded-2xl border border-emerald-200 bg-emerald-50 p-8 text-center">
-        <h1 class="mb-3 text-2xl font-bold text-emerald-900">Check Your Email</h1>
-        <p class="text-sm leading-relaxed text-emerald-800">
+    <div class="login-box">
+        <p>Check Your Email</p>
+        <p class="hint">
             An activation link and password setup instructions have been sent to your email.
             If you haven't received it, please check your spam folder as well.
         </p>
-        <a href="/" class="mt-6 inline-block rounded-lg bg-primary px-6 py-2.5 font-semibold text-white hover:bg-primary/90">
-            Back to Home
-        </a>
+        <div class="center">
+            <a href="/" class="btn">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                Back to Home
+            </a>
+        </div>
     </div>
 {% endblock %}

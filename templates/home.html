@@ -8,108 +8,6 @@
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
     <link rel="stylesheet" href="{% static 'css/background.css' %}">
     <link rel="stylesheet" href="{% static 'css/auth.css' %}">
-</head>
-<body class="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased">
-    <div class="background"></div>
-
-    <!-- Floating Brand and Register -->
-    <div class="fixed top-0 left-0 right-0 w-full px-8 py-6 flex justify-between items-center" style="z-index: 9999;">
-        <a href="/" class="auth-brand" style="position: fixed; left: 20px; transform: none; color: #000;">MyClinic</a>
-        <a href="{% url 'accounts:patient_signup' %}" style="position: fixed; right: 20px; top: 20px; display: inline-block; padding: 10px 20px; background: rgba(0,0,0,.9); box-shadow: 0 15px 25px rgba(0,0,0,.6); border-radius: 10px; font-weight: bold; color: #fff; font-size: 14px; text-decoration: none; text-transform: uppercase; overflow: hidden; transition: .5s; letter-spacing: 2px;">
-            <span style="position: absolute; display: block; top: 0; left: -100%; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #fff); animation: btn-anim1 1.5s linear infinite;"></span>
-            <span style="position: absolute; display: block; top: -100%; right: 0; width: 2px; height: 100%; background: linear-gradient(180deg, transparent, #fff); animation: btn-anim2 1.5s linear infinite; animation-delay: .375s;"></span>
-            <span style="position: absolute; display: block; bottom: 0; right: -100%; width: 100%; height: 2px; background: linear-gradient(270deg, transparent, #fff); animation: btn-anim3 1.5s linear infinite; animation-delay: .75s;"></span>
-            <span style="position: absolute; display: block; bottom: -100%; left: 0; width: 2px; height: 100%; background: linear-gradient(360deg, transparent, #fff); animation: btn-anim4 1.5s linear infinite; animation-delay: 1.125s;"></span>
-            Register
-        </a>
-    </div>
-
-    <section class="relative flex w-full items-end justify-center overflow-hidden" style="height: 100vh;">
-        <!-- Decorative Elements -->
-        <div class="absolute top-20 left-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-        <div class="absolute top-40 right-10 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div class="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-
-        <div class="relative z-10 w-full h-full flex items-end justify-center px-4 sm:px-6 lg:px-8 pb-0">
-            <div class="max-w-7xl mx-auto w-full">
-                <div class="grid lg:grid-cols-2 gap-12 items-end">
-                    <!-- Left Column: Content -->
-                    <div class="text-center space-y-8 pb-12 flex flex-col items-center">
-                        <!-- Main Headline -->
-                        <h1 class="font-extrabold text-slate-900 leading-tight" style="font-size: clamp(1.75rem, 5vw, 4.5rem); width: 80vw;">
-                            Give yourself the gift of good health with us
-                        </h1>
-                    </div>
-
-                    <!-- Right Column: Hero Image -->
-                    <div class="relative flex items-center justify-center lg:justify-end gap-4">
-                        <!-- Book Appointment Button -->
-                        <a href="{% url 'core:doctor_list' %}" style="display: inline-block; padding: 12px 24px; background: rgba(0,0,0,.9); box-shadow: 0 15px 25px rgba(0,0,0,.6); border-radius: 10px; font-weight: bold; color: #fff; font-size: 14px; text-decoration: none; text-transform: uppercase; overflow: hidden; transition: .5s; letter-spacing: 2px; position: relative; height: fit-content;">
-                            <span style="position: absolute; display: block; top: 0; left: -100%; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #fff); animation: btn-anim1 1.5s linear infinite;"></span>
-                            <span style="position: absolute; display: block; top: -100%; right: 0; width: 2px; height: 100%; background: linear-gradient(180deg, transparent, #fff); animation: btn-anim2 1.5s linear infinite; animation-delay: .375s;"></span>
-                            <span style="position: absolute; display: block; bottom: 0; right: -100%; width: 100%; height: 2px; background: linear-gradient(270deg, transparent, #fff); animation: btn-anim3 1.5s linear infinite; animation-delay: .75s;"></span>
-                            <span style="position: absolute; display: block; bottom: -100%; left: 0; width: 2px; height: 100%; background: linear-gradient(360deg, transparent, #fff); animation: btn-anim4 1.5s linear infinite; animation-delay: 1.125s;"></span>
-                            Book Appointment
-                        </a>
-
-                        <div class="relative">
-                            <!-- Floating Card 1 -->
-                            <div class="absolute -top-4 -left-4 bg-white rounded-2xl shadow-xl p-4 animate-float hidden sm:block" style="animation-delay: 0s;">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-semibold text-slate-900">Appointment Booked</p>
-                                        <p class="text-xs text-slate-500">Dr. Smith - Today 3PM</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Floating Card 2 -->
-                            <div class="absolute bottom-8 -right-4 bg-white rounded-2xl shadow-xl p-4 animate-float hidden sm:block" style="animation-delay: 1s;">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-semibold text-slate-900">Medication Reminder</p>
-                                        <p class="text-xs text-slate-500">Take aspirin - 8:00 AM</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Main Image -->
-                            <img src="{% static 'images/hero-doctor.png' %}"
-                                 alt="Healthcare Professional"
-                                 class="relative z-10 w-full max-w-md h-auto object-contain object-bottom drop-shadow-2xl">
-                        </div>
-
-                        <!-- Set Medication Button -->
-                        <a href="{% url 'medications:medication_list' %}" style="display: inline-block; padding: 12px 24px; background: rgba(0,0,0,.9); box-shadow: 0 15px 25px rgba(0,0,0,.6); border-radius: 10px; font-weight: bold; color: #fff; font-size: 14px; text-decoration: none; text-transform: uppercase; overflow: hidden; transition: .5s; letter-spacing: 2px; position: relative; height: fit-content;">
-                            <span style="position: absolute; display: block; top: 0; left: -100%; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #fff); animation: btn-anim1 1.5s linear infinite;"></span>
-                            <span style="position: absolute; display: block; top: -100%; right: 0; width: 2px; height: 100%; background: linear-gradient(180deg, transparent, #fff); animation: btn-anim2 1.5s linear infinite; animation-delay: .375s;"></span>
-                            <span style="position: absolute; display: block; bottom: 0; right: -100%; width: 100%; height: 2px; background: linear-gradient(270deg, transparent, #fff); animation: btn-anim3 1.5s linear infinite; animation-delay: .75s;"></span>
-                            <span style="position: absolute; display: block; bottom: -100%; left: 0; width: 2px; height: 100%; background: linear-gradient(360deg, transparent, #fff); animation: btn-anim4 1.5s linear infinite; animation-delay: 1.125s;"></span>
-                            Set Medication
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bottom Scroll Indicator -->
-        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce hidden lg:block">
-            <svg class="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
-            </svg>
-        </div>
-    </section>
-
     <style>
         @keyframes blob {
             0%, 100% { transform: translate(0, 0) scale(1); }
@@ -117,27 +15,400 @@
             66% { transform: translate(-20px, 20px) scale(0.9); }
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
+        .animate-blob { animation: blob 7s infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+
+        .btn-neon {
+            display: inline-block;
+            padding: 12px 24px;
+            background: rgba(0,0,0,.9);
+            box-shadow: 0 15px 25px rgba(0,0,0,.6);
+            border-radius: 10px;
+            font-weight: bold;
+            color: #fff;
+            font-size: 14px;
+            text-decoration: none;
+            text-transform: uppercase;
+            overflow: hidden;
+            transition: .5s;
+            letter-spacing: 2px;
+            position: relative;
+            height: fit-content;
+            white-space: nowrap;
         }
 
-        .animate-blob {
-            animation: blob 7s infinite;
+        .btn-neon span {
+            position: absolute;
+            display: block;
+            background: linear-gradient(90deg, transparent, #fff);
+            animation: btn-anim1 1.5s linear infinite;
         }
 
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
+        .btn-neon span:nth-child(1) { top: 0; left: -100%; width: 100%; height: 2px; }
+        .btn-neon span:nth-child(2) { top: -100%; right: 0; width: 2px; height: 100%; animation: btn-anim2 1.5s linear infinite; animation-delay: .375s; background: linear-gradient(180deg, transparent, #fff); }
+        .btn-neon span:nth-child(3) { bottom: 0; right: -100%; width: 100%; height: 2px; animation: btn-anim3 1.5s linear infinite; animation-delay: .75s; background: linear-gradient(270deg, transparent, #fff); }
+        .btn-neon span:nth-child(4) { bottom: -100%; left: 0; width: 2px; height: 100%; animation: btn-anim4 1.5s linear infinite; animation-delay: 1.125s; background: linear-gradient(360deg, transparent, #fff); }
+
+        @keyframes btn-anim1 { 0% { left: -100%; } 50%, 100% { left: 100%; } }
+        @keyframes btn-anim2 { 0% { top: -100%; } 50%, 100% { top: 100%; } }
+        @keyframes btn-anim3 { 0% { right: -100%; } 50%, 100% { right: 100%; } }
+        @keyframes btn-anim4 { 0% { bottom: -100%; } 50%, 100% { bottom: 100%; } }
+
+        .register-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: rgba(0,0,0,.9);
+            box-shadow: 0 15px 25px rgba(0,0,0,.6);
+            border-radius: 10px;
+            font-weight: bold;
+            color: #fff;
+            font-size: 14px;
+            text-decoration: none;
+            text-transform: uppercase;
+            overflow: hidden;
+            transition: .5s;
+            letter-spacing: 2px;
+            position: relative;
+            white-space: nowrap;
         }
 
-        .animation-delay-2000 {
-            animation-delay: 2s;
+        .hero-section {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            min-height: 100svh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
-        .animation-delay-4000 {
-            animation-delay: 4s;
+        .hero-layout {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 88rem;
+            min-height: 100vh;
+            min-height: 100svh;
+            margin: 0 auto;
+            padding: clamp(1.5rem, 4vw, 4rem);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(1.5rem, 4vw, 3rem);
+        }
+
+        .hero-nav {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.25rem;
+            padding: 0 0.5rem;
+        }
+
+        .hero-brand {
+            color: #0f172a;
+            font-size: clamp(1.5rem, 3vw, 2.25rem);
+            font-weight: 800;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .hero-title {
+            max-width: 62rem;
+            margin: 0;
+            color: #0f172a;
+            text-align: center;
+            font-size: clamp(2.25rem, 6vw, 5rem);
+            line-height: 1.05;
+        }
+
+        .hero-actions {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(1rem, 3vw, 2.5rem);
+            flex-wrap: wrap;
+        }
+
+        .hero-image-wrapper {
+            width: min(100%, 28rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-image-wrapper img {
+            width: 100%;
+            height: auto;
+            max-height: 46vh;
+            object-fit: contain;
+            object-position: bottom;
+        }
+
+        .info-card {
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 1rem 2rem rgba(15, 23, 42, .12);
+            padding: .75rem 1rem;
+        }
+
+        .about-us-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .625rem 1.25rem;
+            color: #334155;
+            background: rgba(255,255,255,.9);
+            border-radius: 999px;
+            box-shadow: 0 .75rem 1.5rem rgba(15, 23, 42, .12);
+            font-size: .875rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all .3s ease;
+        }
+
+        .about-us-btn:hover {
+            background: #fff;
+            box-shadow: 0 1rem 2rem rgba(15, 23, 42, .18);
+        }
+
+        @media (max-width: 767px) {
+            .hero-section {
+                min-height: 100svh;
+                padding: 4.5rem 1rem 2rem;
+            }
+
+            .hero-layout {
+                min-height: 100svh;
+                padding: 0;
+                gap: 1.5rem;
+                justify-content: flex-start;
+            }
+
+            .hero-nav {
+                width: 100%;
+            }
+
+            .hero-title {
+                width: 100%;
+                font-size: clamp(2rem, 10vw, 3rem);
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .hero-actions .btn-neon {
+                width: 100%;
+                max-width: 22rem;
+                text-align: center;
+            }
+
+            .hero-actions .btn-neon:first-child { order: 1; }
+            .hero-actions .btn-neon:last-child { order: 2; }
+            .hero-image-wrapper { order: 3; width: min(100%, 20rem); }
+
+            .info-card {
+                padding: .625rem .75rem;
+            }
+
+            .about-us-btn {
+                padding: .5rem 1rem;
+                font-size: .75rem;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .hero-layout {
+                max-width: 96rem;
+                padding: clamp(2rem, 3vw, 5rem);
+            }
+
+            .hero-section {
+                min-height: 110vh;
+            }
+
+            .hero-actions {
+                flex-wrap: nowrap;
+            }
+
+            .hero-image-wrapper {
+                width: clamp(26rem, 40vw, 40rem);
+                max-width: 45rem;
+            }
         }
     </style>
+</head>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased">
+<div class="container"></div>
 
+<section class="hero-section">
+    <!-- Decorative Blobs -->
+    <div class="absolute top-20 left-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob blob"></div>
+    <div class="absolute top-40 right-10 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000 blob"></div>
+    <div class="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000 blob"></div>
+
+    <div class="hero-layout">
+        <!-- 1. Brand and registration -->
+        <header class="hero-nav">
+            <a href="/" class="hero-brand">MyClinic</a>
+            <a href="{% url 'accounts:patient_signup' %}" class="register-btn">
+                <span></span><span></span><span></span><span></span>
+                Register
+            </a>
+        </header>
+
+        <!-- 2. Main heading -->
+        <h1 class="hero-title">
+            Give yourself the gift of good health with us
+        </h1>
+
+        <!-- 3. Book appointment, hero image, and medication -->
+        <div class="hero-actions">
+            <a href="{% url 'core:doctor_list' %}" class="btn-neon">
+                <span></span><span></span><span></span><span></span>
+                Book Appointment
+            </a>
+
+            <div class="hero-image-wrapper">
+                <!-- Info Card 1 -->
+                <div class="info-card absolute -top-4 -left-4 hidden sm:block">
+                    <div class="flex items-center gap-2 sm:gap-3">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-xs sm:text-sm font-semibold text-slate-900">Appointment Booked</p>
+                            <p class="text-xs text-slate-500">Dr. Smith - Today 3PM</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Card 2 -->
+                <div class="info-card absolute bottom-8 -right-2 hidden sm:block">
+                    <div class="flex items-center gap-2 sm:gap-3">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-xs sm:text-sm font-semibold text-slate-900">Medication Reminder</p>
+                            <p class="text-xs text-slate-500">Take aspirin - 8:00 AM</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Image -->
+                <img src="{% static 'images/hero_image.png' %}"
+                     alt="Healthcare Professional"
+                     class="relative z-10 w-full h-auto object-contain object-bottom drop-shadow-2xl">
+            </div>
+
+            <a href="{% url 'medications:medication_list' %}" class="btn-neon">
+                <span></span><span></span><span></span><span></span>
+                Set Medication
+            </a>
+        </div>
+
+        </div>
+</section>
+
+{% block content %}{% endblock %}
+
+<script src="{% static 'js/flatpickr.min.js' %}"></script>
+<script src="{% static 'js/flatpickr-init.js' %}"></script>
+<script>
+    (function () {
+        var toggle = document.querySelector("[data-nav-toggle]");
+        var panel = document.querySelector("[data-nav-panel]");
+        if (toggle && panel) {
+            function setOpen(open) {
+                panel.classList.toggle("hidden", !open);
+                toggle.setAttribute("aria-expanded", open ? "true" : "false");
+            }
+            toggle.addEventListener("click", function () {
+                setOpen(panel.classList.contains("hidden"));
+            });
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape" && !panel.classList.contains("hidden")) {
+                    setOpen(false);
+                    toggle.focus();
+                }
+            });
+            document.addEventListener("click", function (e) {
+                if (!panel.classList.contains("hidden") &&
+                    !panel.contains(e.target) &&
+                    !toggle.contains(e.target)) {
+                    setOpen(false);
+                }
+            });
+        }
+
+        var carousels = document.querySelectorAll("[data-doctor-carousel]");
+        carousels.forEach(function (carousel) {
+            var viewport = carousel.querySelector("[data-carousel-viewport]");
+            var prevBtn = carousel.querySelector("[data-carousel-prev]");
+            var nextBtn = carousel.querySelector("[data-carousel-next]");
+            var items = carousel.querySelectorAll("[data-carousel-item]");
+            if (!viewport || !prevBtn || !nextBtn || items.length === 0) return;
+
+            var rtl = (document.documentElement.getAttribute("dir") || "ltr").toLowerCase() === "rtl";
+            var reduceMotion = window.matchMedia &&
+                window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+            function scrollByCards(direction) {
+                var item = items[0];
+                if (!item) return;
+                var cardWidth = item.getBoundingClientRect().width;
+                var gap = parseFloat(getComputedStyle(item.parentNode).gap) || 0;
+                var scrollAmount = cardWidth + gap;
+                var behavior = reduceMotion ? "auto" : "smooth";
+                viewport.scrollBy({
+                    left: direction * scrollAmount,
+                    behavior: behavior,
+                });
+            }
+
+            prevBtn.addEventListener("click", function () {
+                scrollByCards(rtl ? 1 : -1);
+            });
+            nextBtn.addEventListener("click", function () {
+                scrollByCards(rtl ? -1 : 1);
+            });
+
+            var controls = carousel.querySelector("[data-carousel-controls]");
+
+            function updateButtons() {
+                var scrollLeft = viewport.scrollLeft;
+                var maxScroll = viewport.scrollWidth - viewport.clientWidth;
+                if (maxScroll <= 1) {
+                    if (controls) controls.style.display = "none";
+                    return;
+                }
+                if (controls) controls.style.display = "";
+                var atStart = scrollLeft <= 1;
+                var atEnd = scrollLeft >= maxScroll - 1;
+                prevBtn.disabled = atStart;
+                nextBtn.disabled = atEnd;
+            }
+
+            viewport.addEventListener("scroll", updateButtons, { passive: true });
+            window.addEventListener("resize", updateButtons);
+            updateButtons();
+        });
+    })();
+</script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,24 +1,34 @@
 {% if form.non_field_errors %}
-    <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+    <div class="auth-errors">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
     </div>
 {% endif %}
 {% for field in form.hidden_fields %}{{ field }}{% endfor %}
-<div class="space-y-4">
-    {% for field in form.visible_fields %}
-        <div>
-            <label for="{{ field.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">
-                {{ field.label }}
-                {% if field.field.required %}<span class="text-red-600">*</span>{% endif %}
+{% for field in form.visible_fields %}
+    {% if field.field.widget.input_type == 'checkbox' or field.field.widget.input_type == 'radio' %}
+        <div class="user-box">
+            <label class="checkbox">
+                {{ field }}
+                <span>{{ field.label }}</span>
             </label>
-            {{ field }}
-            {% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
-            {% if field.errors %}
-                <p class="mt-1 text-xs text-red-700">{% for error in field.errors %}{{ error }}{% endfor %}</p>
-            {% endif %}
+            {% if field.help_text %}<p class="auth-help">{{ field.help_text }}</p>{% endif %}
+            {% if field.errors %}<p class="auth-error">{{ field.errors|first }}</p>{% endif %}
         </div>
-    {% endfor %}
-</div>
-<button type="submit" class="mt-6 w-full rounded-lg bg-primary px-4 py-2.5 font-semibold text-white hover:bg-primary/90">
+    {% else %}
+        <div class="user-box">
+            {{ field }}
+            <label for="{{ field.id_for_label }}">
+                {{ field.label }}{% if field.field.required %}<span class="req">*</span>{% endif %}
+            </label>
+            {% if field.help_text %}<p class="auth-help">{{ field.help_text }}</p>{% endif %}
+            {% if field.errors %}<p class="auth-error">{{ field.errors|first }}</p>{% endif %}
+        </div>
+    {% endif %}
+{% endfor %}
+<button type="submit" class="btn">
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
     {{ submit_label }}
 </button>

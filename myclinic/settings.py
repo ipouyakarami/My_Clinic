@@ -105,7 +105,11 @@ AUTH_USER_MODEL = "accounts.User"
 
 # django-allauth — email-only accounts, mandatory verification
 ACCOUNT_ADAPTER = "accounts.adapter.AccountAdapter"
-ACCOUNT_FORMS = {"login": "accounts.forms.MyClinicLoginForm"}
+ACCOUNT_FORMS = {
+    "login": "accounts.forms.MyClinicLoginForm",
+    "reset_password": "accounts.forms.MyClinicResetPasswordForm",
+    "reset_password_from_key": "accounts.forms.MyClinicResetPasswordKeyForm",
+}
 
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]

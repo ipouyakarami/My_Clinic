@@ -4,7 +4,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from allauth.account.forms import LoginForm
+from allauth.account.forms import LoginForm, ResetPasswordForm, ResetPasswordKeyForm
 
 from .models import Doctor
 from .services import send_activation_email
@@ -24,6 +24,11 @@ class FormMixin:
 
 
 class MyClinicLoginForm(LoginForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("login", "password"):
+            self.fields[name].widget.attrs.pop("placeholder", None)
+
     def clean(self):
         try:
             return super().clean()
@@ -39,15 +44,23 @@ class MyClinicLoginForm(LoginForm):
             raise
 
 
+class MyClinicResetPasswordForm(ResetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["email"].widget.attrs.pop("placeholder", None)
+
+
+class MyClinicResetPasswordKeyForm(ResetPasswordKeyForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("password1", "password2"):
+            self.fields[name].widget.attrs.pop("placeholder", None)
+
+
 class PatientSignupForm(FormMixin, forms.Form):
     email = forms.EmailField(label=_("Email"))
     first_name = forms.CharField(label=_("First Name"), max_length=150)
     last_name = forms.CharField(label=_("Last Name"), max_length=150)
-    phone_number = forms.CharField(
-        label=_("Phone Number (optional)"),
-        max_length=15,
-        required=False,
-    )
 
     def clean_email(self):
         email = self.cleaned_data["email"].lower()

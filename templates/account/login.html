@@ -2,26 +2,22 @@
 
 {% block title %}Log In — MyClinic{% endblock %}
 
-{% block content %}
-    <div class="mx-auto max-w-md">
-        <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h1 class="mb-6 text-2xl font-bold text-slate-900">Log In</h1>
-            <form method="post" action="{% url 'account_login' %}" novalidate>
-                {% csrf_token %}
-                {% include "accounts/_form.html" with form=form submit_label="Log In" %}
-            </form>
-            <div class="mt-6 space-y-2 text-center text-sm text-slate-600">
-                <p>
-                    Forgot your password?
-                    <a href="{% url 'account_reset_password' %}" class="font-medium text-primary hover:underline">Recover Password</a>
-                </p>
-                <p>
-                    Don't have an account?
-                    <a href="{% url 'accounts:patient_signup' %}" class="font-medium text-primary hover:underline">Register as Patient</a>
-                </p>
-            </div>
-        </div>
+{% block page_background %}<div class="container container-dark"></div>{% endblock %}
+{% block header %}{% include "accounts/_auth_brand.html" %}{% endblock %}
+{% block footer %}{% endblock %}
 
-        {% include "accounts/_demo_accounts.html" %}
+{% block content %}
+    <div class="login-box">
+        <p>Log In</p>
+        <form method="post" action="{% url 'account_login' %}" novalidate>
+            {% csrf_token %}
+            {% include "accounts/_form.html" with form=form submit_label="Log In" %}
+        </form>
+        <p>
+            Forgot your password? <a href="{% url 'account_reset_password' %}" class="a2">Recover Password</a><br>
+            Don't have an account? <a href="{% url 'accounts:patient_signup' %}" class="a2">Sign up!</a>
+        </p>
     </div>
+
+    {% include "accounts/_demo_accounts.html" %}
 {% endblock %}

@@ -2,19 +2,22 @@
 
 {% block title %}Patient Registration — MyClinic{% endblock %}
 
+{% block page_background %}<div class="container container-dark"></div>{% endblock %}
+{% block header %}{% include "accounts/_auth_brand.html" %}{% endblock %}
+{% block footer %}{% endblock %}
+
 {% block content %}
-    <div class="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 class="mb-2 text-2xl font-bold text-slate-900">Patient Registration</h1>
-        <p class="mb-6 text-sm text-slate-500">
+    <div class="login-box">
+        <p>Patient Registration</p>
+        <p class="hint">
             After registration, an activation link and password setup instructions will be sent to your email.
         </p>
         <form method="post" novalidate>
             {% csrf_token %}
             {% include "accounts/_form.html" with form=form submit_label="Register" %}
         </form>
-        <p class="mt-6 text-center text-sm text-slate-600">
-            Already registered?
-            <a href="{% url 'account_login' %}" class="font-medium text-primary hover:underline">Log In</a>
+        <p>
+            Already registered? <a href="{% url 'account_login' %}" class="a2">Log In</a>
         </p>
     </div>
 {% endblock %}

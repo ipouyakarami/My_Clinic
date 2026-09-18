@@ -23,7 +23,6 @@ class PatientSignupTests(TestCase):
             "email": email,
             "first_name": "سارا",
             "last_name": "محمدی",
-            "phone_number": "09121234567",
             **overrides,
         }
         return self.client.post(reverse("accounts:patient_signup"), data)
@@ -38,7 +37,7 @@ class PatientSignupTests(TestCase):
         self.assertFalse(user.is_active)
         self.assertFalse(user.has_usable_password())
         profile = Patient.objects.get(user=user)
-        self.assertEqual(profile.phone_number, "09121234567")
+        self.assertEqual(profile.phone_number, "")
         email_address = EmailAddress.objects.get(user=user)
         self.assertFalse(email_address.verified)
         self.assertTrue(email_address.primary)

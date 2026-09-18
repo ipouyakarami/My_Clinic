@@ -1,0 +1,27 @@
+/* From Uiverse.io by kennytsu-monochromia */
+body {
+  background-color: #F3F3F3;
+  margin: 0;
+  padding: 0;
+  min-width: 100%;
+  overflow-x: hidden;
+}
+
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  min-width: 100%;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  z-index: -1;
+  --color: #E1E1E1;
+  background-color: #F3F3F3;
+  background-image: linear-gradient(0deg, transparent 24%, var(--color) 25%, var(--color) 26%, transparent 27%, transparent 74%, var(--color) 75%, var(--color) 76%, transparent 77%, transparent),
+      linear-gradient(90deg, transparent 24%, var(--color) 25%, var(--color) 26%, transparent 27%, transparent 74%, var(--color) 75%, var(--color) 76%, transparent 77%, transparent);
+  background-size: 55px 55px;
+  pointer-events: none;
+}
