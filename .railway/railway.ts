@@ -17,6 +17,7 @@ export default defineRailway(() => {
     env: { DATABASE_URL: preserve(), DEFAULT_FROM_EMAIL: preserve(), DEMO_MODE: preserve(), DEMO_PASSWORD: preserve(), DJANGO_DEBUG: preserve(), DJANGO_SECRET_KEY: preserve(), EMAIL_HOST_PASSWORD: preserve(), EMAIL_HOST_USER: preserve(), TELEGRAM_BOT_TOKEN: preserve(), TELEGRAM_BOT_USERNAME: preserve(), TIME_ZONE: preserve() },
   });
   const worker = service("worker", {
+    start: "celery -A myclinic worker -B --concurrency 2 -l info",
     replicas: { "sfo": 1 },
     deploy: { ipv6EgressEnabled: true },
     env: { DATABASE_URL: preserve(), DEFAULT_FROM_EMAIL: preserve(), DEMO_MODE: preserve(), DJANGO_DEBUG: preserve(), DJANGO_SECRET_KEY: preserve(), EMAIL_HOST_PASSWORD: preserve(), EMAIL_HOST_USER: preserve(), SERVICE_ROLE: preserve(), TELEGRAM_BOT_TOKEN: preserve(), TELEGRAM_BOT_USERNAME: preserve(), TIME_ZONE: preserve() },
