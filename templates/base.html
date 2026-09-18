@@ -18,18 +18,41 @@
     {% block header %}{% include "_header.html" %}{% endblock %}
 
     {% if messages %}
-        <div class="mx-auto max-w-6xl px-4 pt-4">
+        <div class="toast-container">
             {% for message in messages %}
-                <div class="mb-2 rounded-lg border px-4 py-3 text-sm
-                            {% if message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-800{% endif %}
-                            {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800{% endif %}
-                            {% if message.tags == 'warning' %}border-amber-200 bg-amber-50 text-amber-800{% endif %}
-                            {% if message.tags == 'info' or message.tags == '' %}border-sky-200 bg-sky-50 text-sky-800{% endif %}">
-                {{ message }}
+                <div class="toast toast-{% if message.tags == 'error' or message.tags == 'warning' or message.tags == 'success' %}{{ message.tags }}{% else %}info{% endif %}">
+                    <span>{{ message }}</span>
+                    <button type="button" class="toast-close" aria-label="Close">&times;</button>
                 </div>
             {% endfor %}
         </div>
     {% endif %}
+
+    <script>
+        (function () {
+            function dismiss(toast) {
+                if (!toast || toast.dataset.closing) return;
+                toast.dataset.closing = "1";
+                toast.classList.add("toast-hide");
+                setTimeout(function () {
+                    toast.remove();
+                }, 320);
+            }
+
+            var toasts = document.querySelectorAll(".toast-container .toast");
+            toasts.forEach(function (toast) {
+                var closeBtn = toast.querySelector(".toast-close");
+                if (closeBtn) {
+                    closeBtn.addEventListener("click", function () {
+                        dismiss(toast);
+                    });
+                }
+                setTimeout(function () {
+                    dismiss(toast);
+                }, 10000);
+            });
+        })();
+    </script>
 
     <main class="mx-auto max-w-6xl px-4 py-8">
         {% block content %}{% endblock %}

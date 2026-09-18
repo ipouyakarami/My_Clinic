@@ -363,6 +363,85 @@
   background-color: #191a1a;
 }
 
+/* Alert messages as toast notifications, styled to match auth pages */
+.toast-container {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: min(24rem, calc(100vw - 2.5rem));
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 14px 18px;
+  background: rgba(0, 0, 0, 0.92);
+  box-shadow: 0 15px 25px rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 14px;
+  animation: toast-in 0.3s ease-out;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.toast-close:hover {
+  color: #fff;
+}
+
+.toast-hide {
+  opacity: 0;
+  transform: translateX(100%);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast-success {
+  border-color: rgba(52, 211, 153, 0.5);
+  color: #a7f3d0;
+}
+
+.toast-error {
+  border-color: rgba(248, 113, 113, 0.5);
+  color: #fca5a5;
+}
+
+.toast-warning {
+  border-color: rgba(251, 191, 36, 0.5);
+  color: #fde68a;
+}
+
+.toast-info {
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #bae6fd;
+}
+
 @media (max-width: 480px) {
   .login-box {
     padding: 30px 22px;
