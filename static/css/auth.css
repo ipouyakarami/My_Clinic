@@ -447,3 +447,18 @@
     padding: 30px 22px;
   }
 }
+
+.service-box {
+  padding: 24px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.9);
+  box-shadow: 0 15px 25px rgba(0, 0, 0, 0.6);
+  border-radius: 10px;
+  color: #fff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.service-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.7);
+}

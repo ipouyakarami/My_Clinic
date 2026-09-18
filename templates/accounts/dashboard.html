@@ -3,169 +3,85 @@
 {% block title %}Dashboard — MyClinic{% endblock %}
 
 {% block content %}
-    {% if user.user_type == "doctor" %}
-        <h1 class="mb-6 text-2xl font-bold text-slate-900">
-            Doctor Dashboard — Dr. {{ user.get_full_name }}
-        </h1>
+    <h1 class="mb-6 text-2xl font-bold text-slate-900">My Dashboard — {{ user.get_full_name }}</h1>
 
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-            <div class="rounded-3xl border border-slate-200 bg-white p-5">
-                <p class="text-sm text-slate-500">Today's Appointments</p>
-                <p class="text-3xl font-bold text-primary">{{ today_total }}</p>
-            </div>
-            <div class="rounded-3xl border border-slate-200 bg-white p-5">
-                <p class="text-sm text-slate-500">Completed Today</p>
-                <p class="text-3xl font-bold text-primary">{{ today_completed }}</p>
-            </div>
-            <div class="rounded-3xl border border-slate-200 bg-white p-5">
-                <p class="text-sm text-slate-500">Upcoming</p>
-                <p class="text-3xl font-bold text-primary">{{ upcoming_count }}</p>
-            </div>
-            <div class="rounded-3xl border border-slate-200 bg-white p-5">
-                <p class="text-sm text-slate-500">Patients Seen</p>
-                <p class="text-3xl font-bold text-primary">{{ patients_seen }}</p>
-            </div>
-        </div>
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <a href="{% url 'core:doctor_list' %}"
+           class="service-box group flex flex-col gap-4">
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-white transition group-hover:bg-white/20">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </span>
+            <span>
+                <span class="block font-semibold text-white">Book Appointment</span>
+                <span class="mt-1 block text-sm text-slate-400">Find a doctor and reserve a visit</span>
+            </span>
+        </a>
 
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-bold text-slate-900">Today's Appointments</h2>
-                <a href="{% url 'appointments:doctor_today_appointments' %}" class="text-sm text-primary hover:underline">View All</a>
-            </div>
-            {% if todays_appointments %}
-                <div class="grid gap-5 md:grid-cols-3">
-                    {% for appointment in todays_appointments %}
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <p class="font-medium text-slate-900">{{ appointment.patient.user.get_full_name }}</p>
-                            <p class="text-sm text-slate-500">{{ appointment.time_slot.start_time|time:"H:i" }}{% if appointment.time_slot.end_time %} &ndash; {{ appointment.time_slot.end_time|time:"H:i" }}{% endif %}</p>
-                            <div class="mt-3">
-                                <a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="rounded-lg bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary/90">Details</a>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="text-slate-500">No appointments scheduled for today.</p>
-            {% endif %}
-        </div>
+        <a href="{% url 'appointments:patient_appointment_list' %}"
+           class="service-box group flex flex-col gap-4">
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-white transition group-hover:bg-white/20">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+            </span>
+            <span>
+                <span class="block font-semibold text-white">My Booked Appointments</span>
+                <span class="mt-1 block text-sm text-slate-400">Review and manage your visits</span>
+            </span>
+        </a>
 
-        <div class="grid gap-4 sm:grid-cols-3">
-            <a href="{% url 'appointments:working_hours_create' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-center transition hover:border-primary hover:shadow-sm">
-                <p class="font-semibold text-slate-900">Working Hours</p>
-                <p class="mt-1 text-sm text-slate-500">Define your availability</p>
-            </a>
-            <a href="{% url 'appointments:doctor_appointment_list' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-center transition hover:border-primary hover:shadow-sm">
-                <p class="font-semibold text-slate-900">All Appointments</p>
-                <p class="mt-1 text-sm text-slate-500">View your schedule</p>
-            </a>
-            <a href="{% url 'appointments:doctor_today_appointments' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-center transition hover:border-primary hover:shadow-sm">
-                <p class="font-semibold text-slate-900">Today's Appointments</p>
-                <p class="mt-1 text-sm text-slate-500">See today's patients</p>
-            </a>
-        </div>
+        <a href="{% url 'medications:medication_list' %}"
+           class="service-box group flex flex-col gap-4">
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-white transition group-hover:bg-white/20">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </span>
+            <span>
+                <span class="block font-semibold text-white">Medications</span>
+                <span class="mt-1 block text-sm text-slate-400">Set your schedule and get reminders</span>
+            </span>
+        </a>
 
-    {% else %}
-        <h1 class="mb-6 text-2xl font-bold text-slate-900">
-            Patient Dashboard — {{ user.get_full_name }}
-        </h1>
+        <a href="{% url 'medications:medication_calendar' %}"
+           class="service-box group flex flex-col gap-4">
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-white transition group-hover:bg-white/20">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2zM12 15l1.5 1.5L15.5 14"/>
+                </svg>
+            </span>
+            <span>
+                <span class="block font-semibold text-white">Medication Calendar</span>
+                <span class="mt-1 block text-sm text-slate-400">View and manage your daily schedule</span>
+            </span>
+        </a>
 
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-            <div class="rounded-3xl border border-slate-200 bg-white p-5">
-                <p class="text-sm text-slate-500">Upcoming Appointments</p>
-                <p class="text-3xl font-bold text-primary">{{ upcoming_appointments|length }}</p>
-            </div>
-            <div class="rounded-3xl border border-slate-200 bg-white p-5">
-                <p class="text-sm text-slate-500">Active Medications</p>
-                <p class="text-3xl font-bold text-primary">{{ active_medications_count }}</p>
-            </div>
-            <div class="rounded-3xl border border-slate-200 bg-white p-5">
-                <p class="text-sm text-slate-500">Test Results</p>
-                <p class="text-3xl font-bold text-primary">{{ tests_count }}</p>
-            </div>
-        </div>
+        <a href="{% url 'medical_tests:medical_test_add' %}"
+           class="service-box group flex flex-col gap-4">
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-white transition group-hover:bg-white/20">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+            </span>
+            <span>
+                <span class="block font-semibold text-white">Upload Test</span>
+                <span class="mt-1 block text-sm text-slate-400">Add and view your test results</span>
+            </span>
+        </a>
 
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-bold text-slate-900">Upcoming Appointments</h2>
-                <a href="{% url 'appointments:patient_appointment_list' %}" class="text-sm text-primary hover:underline">View All</a>
-            </div>
-            {% if upcoming_appointments %}
-                <div class="space-y-3">
-                    {% for appointment in upcoming_appointments %}
-                        <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <div>
-                                <p class="font-medium text-slate-900">Dr. {{ appointment.time_slot.doctor.user.get_full_name }}</p>
-                                <p class="text-sm text-slate-500">
-                                    {{ appointment.time_slot.date|date:"M j, Y" }} at {{ appointment.time_slot.start_time|time:"H:i" }}
-                                </p>
-                            </div>
-                            <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-800">{{ appointment.get_status_display }}</span>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="text-slate-500">No upcoming appointments.</p>
-            {% endif %}
-        </div>
-
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 mb-8">
-            <h2 class="mb-4 text-lg font-bold text-slate-900">Today's Medications</h2>
-            {% if today_medication_groups %}
-                {% for scheduled_time, intakes in today_medication_groups %}
-                    <div class="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <p class="text-sm font-medium text-slate-700">{{ scheduled_time|date:"H:i" }}</p>
-                            <form method="post" action="{% url 'medications:intake_mark_batch' %}" class="inline">
-                                {% csrf_token %}
-                                <input type="hidden" name="scheduled_time" value="{{ scheduled_time|date:'Y-m-d H:i:s' }}">
-                                <button type="submit" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm text-white hover:bg-emerald-700">Mark All as Taken</button>
-                            </form>
-                        </div>
-                        <div class="grid gap-5 md:grid-cols-3">
-                            {% for intake in intakes %}
-                                <div class="rounded-xl bg-white p-4">
-                                    <p class="font-medium text-slate-900">{{ intake.medication.name }}</p>
-                                    <p class="text-sm text-slate-500">{{ intake.medication.dosage|default:"&mdash;" }}</p>
-                                    <div class="mt-3 flex gap-2">
-                                        {% if intake.status == 'pending' %}
-                                            <a href="{% url 'medications:intake_taken' intake.token %}" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm text-white hover:bg-emerald-700">Taken</a>
-                                            <a href="{% url 'medications:intake_skipped' intake.token %}" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Skipped</a>
-                                        {% elif intake.status == 'taken' %}
-                                            <span class="rounded-lg bg-emerald-100 px-3 py-1.5 text-sm text-emerald-800">Taken</span>
-                                        {% elif intake.status == 'skipped' %}
-                                            <span class="rounded-lg bg-slate-100 px-3 py-1.5 text-sm text-slate-800">Skipped</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p class="text-slate-500">No medications scheduled for today.</p>
-            {% endif %}
-            <div class="mt-4">
-                <a href="{% url 'medications:medication_calendar' %}" class="text-sm text-primary hover:underline">View Medication Calendar</a>
-            </div>
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-3">
-            <a href="{% url 'core:doctor_list' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-center transition hover:border-primary hover:shadow-sm">
-                <p class="font-semibold text-slate-900">Book Appointment</p>
-                <p class="mt-1 text-sm text-slate-500">Find a doctor</p>
-            </a>
-            <a href="{% url 'medications:medication_add' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-center transition hover:border-primary hover:shadow-sm">
-                <p class="font-semibold text-slate-900">Add Medication</p>
-                <p class="mt-1 text-sm text-slate-500">Track your doses</p>
-            </a>
-            <a href="{% url 'medical_tests:medical_test_add' %}" class="rounded-2xl border border-slate-200 bg-white p-5 text-center transition hover:border-primary hover:shadow-sm">
-                <p class="font-semibold text-slate-900">Upload Test</p>
-                <p class="mt-1 text-sm text-slate-500">Add test results</p>
-            </a>
-            <a href="{% url 'accounts:telegram_connect' %}" class="rounded-2xl border border-sky-200 bg-sky-50 p-5 text-center transition hover:border-sky-300 hover:shadow-sm">
-                <p class="font-semibold text-slate-900">Connect Telegram</p>
-                <p class="mt-1 text-sm text-slate-500">Medication reminders in Telegram</p>
-            </a>
-        </div>
-    {% endif %}
+        <a href="{% url 'accounts:telegram_connect' %}"
+           class="service-box group flex flex-col gap-4">
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-white transition group-hover:bg-white/20">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+            </span>
+            <span>
+                <span class="block font-semibold text-white">Connect Telegram</span>
+                <span class="mt-1 block text-sm text-slate-400">Get medication reminders in Telegram</span>
+            </span>
+        </a>
+    </div>
 {% endblock %}
