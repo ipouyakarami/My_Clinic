@@ -1,8 +1,8 @@
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.views.generic import RedirectView
+from django.views.static import serve as serve_media
 
 from accounts.views import LoginView
 
@@ -21,6 +21,15 @@ urlpatterns = [
     path("medications/", include("medications.urls")),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve user-uploaded files (doctor profile pictures, test PDFs) in prod as
+# well as dev. Files live on a Railway volume mounted at MEDIA_ROOT.
+# (django.conf.urls.static.static() is a DEBUG-only no-op in Django 6, so the
+# pattern is added explicitly.)
+urlpatterns += [
+    re_path(
+        r"^media/(?P<path>.*)$",
+        serve_media,
+        kwargs={"document_root": settings.MEDIA_ROOT},
+    ),
+]
 

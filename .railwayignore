@@ -1,0 +1,9 @@
+.git
+.venv
+node_modules
+media
+staticfiles
+.claude
+.kilo
+tools
+celerybeat-schedule*

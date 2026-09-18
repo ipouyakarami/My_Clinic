@@ -36,6 +36,13 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"  # flip off (DJANGO_DEB
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
 if os.environ.get("RAILWAY_PUBLIC_DOMAIN"):
     ALLOWED_HOSTS.append(os.environ["RAILWAY_PUBLIC_DOMAIN"])
+    CSRF_TRUSTED_ORIGINS = [f"https://{os.environ['RAILWAY_PUBLIC_DOMAIN']}"]
+
+# Railway terminates TLS at its edge and forwards plain HTTP to the container,
+# so tell Django to trust the X-Forwarded-Proto header from the proxy.
+# Without this, request.is_secure() is False and the browser's "https://" Origin
+# fails Django's CSRF origin check (surfacing as a bare 403 on form POSTs).
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
