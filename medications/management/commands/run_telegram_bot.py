@@ -25,6 +25,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from telegram import ReplyKeyboardRemove, Update
+from telegram.error import Conflict
 from telegram.ext import (
     Application,
     ApplicationBuilder,
@@ -84,6 +85,18 @@ async_generate_activation_code = sync_to_async(_generate_activation_code)
 async_save_patient = sync_to_async(_save_patient)
 
 
+async def _error_handler(update, context):
+    """Log instead of crashing so the polling loop can recover."""
+    exc = context.error
+    if isinstance(exc, Conflict):
+        logger.warning(
+            "Long-polling conflict (another instance may be running with the "
+            "same token) — keeping the loop alive and retrying…"
+        )
+        return
+    logger.error("Telegram bot error: %s", exc)
+
+
 class Command(BaseCommand):
     help = "Run the MyClinic Telegram bot (long-polling, reminder-only)"
 
@@ -92,6 +105,7 @@ class Command(BaseCommand):
         bot_username = get_bot_username()
 
         application = ApplicationBuilder().token(token).build()
+        application.add_error_handler(_error_handler)
 
         application.add_handler(CommandHandler("start", self.start))
         application.add_handler(CommandHandler("help", self.help_command))
