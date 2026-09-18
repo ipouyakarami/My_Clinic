@@ -3,6 +3,7 @@ import datetime
 from django.core.mail import send_mail
 from django.db import transaction
 from django.template.loader import render_to_string
+from django.utils import timezone
 
 from accounts.models import Patient
 
@@ -58,19 +59,39 @@ def book_appointment(slot, patient):
 
     Wraps the lock + ``Appointment`` creation + confirmation email in the
     same ``select_for_update()`` transaction the view uses. Raises
-    ``SlotAlreadyBooked`` if the slot was claimed by a concurrent caller.
+    ``SlotAlreadyBooked`` if the slot was claimed by a concurrent caller
+    or already has an active/completed appointment.
 
-    Returns the created ``Appointment``.
+    A slot whose previous appointment was cancelled is re-bookable: the
+    existing (cancelled) ``Appointment`` row is Reactivated and reassigned to
+    ``patient``, because ``Appointment.time_slot`` is a one-to-one field and
+    the two rows cannot coexist for the same slot.
+
+    Returns the ``Appointment`` backing this booking.
     """
     with transaction.atomic():
         locked = TimeSlot.objects.select_for_update().get(pk=slot.pk)
-        if locked.is_booked:
+        existing = Appointment.objects.filter(time_slot=locked).first()
+        if existing is not None and existing.status != Appointment.Status.CANCELLED:
             raise SlotAlreadyBooked(locked.pk)
-        appointment = Appointment.objects.create(
-            patient=patient,
-            time_slot=locked,
-            status=Appointment.Status.ACTIVE,
-        )
+        if existing is None and locked.is_booked:
+            raise SlotAlreadyBooked(locked.pk)
+
+        if existing is None:
+            appointment = Appointment.objects.create(
+                patient=patient,
+                time_slot=locked,
+                status=Appointment.Status.ACTIVE,
+            )
+        else:
+            appointment = existing
+            appointment.patient = patient
+            appointment.status = Appointment.Status.ACTIVE
+            appointment.cancelled_at = None
+            appointment.doctor_summary = ""
+            appointment.created_at = timezone.now()
+            appointment.save()
+
         locked.is_booked = True
         locked.save(update_fields=["is_booked"])
 

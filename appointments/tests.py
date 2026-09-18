@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from accounts.models import Doctor, Patient, User
 from appointments.models import Appointment, TimeSlot
+from appointments.services import SlotAlreadyBooked, book_appointment
 from medical_tests.models import MedicalTestResult
 
 
@@ -256,6 +257,47 @@ class CancelAppointmentTests(AppointmentTestCase):
         self.assertIsNotNone(appointment.cancelled_at)
         slot.refresh_from_db()
         self.assertFalse(slot.is_booked)
+
+    def test_cancelled_slot_can_be_rebooked_by_another_patient(self):
+        doc_user, doctor = self._create_doctor()
+        _, patient1 = self._create_patient(email="pat1@example.com")
+        _, patient2 = self._create_patient(email="pat2@example.com")
+        slot = self._create_slot(doctor, start="23:00", end="23:30")
+        slot.date = timezone.now().date()
+        slot.save()
+
+        cancelled = Appointment.objects.create(patient=patient1, time_slot=slot)
+        cancelled.status = Appointment.Status.CANCELLED
+        cancelled.cancelled_at = timezone.now()
+        cancelled.save()
+        slot.is_booked = False
+        slot.save(update_fields=["is_booked"])
+
+        appointment = book_appointment(slot, patient2)
+
+        self.assertEqual(Appointment.objects.filter(time_slot=slot).count(), 1)
+        self.assertEqual(appointment.pk, cancelled.pk)
+        appointment.refresh_from_db()
+        self.assertEqual(appointment.patient, patient2)
+        self.assertEqual(appointment.status, Appointment.Status.ACTIVE)
+        self.assertIsNone(appointment.cancelled_at)
+        slot.refresh_from_db()
+        self.assertTrue(slot.is_booked)
+
+    def test_active_slot_cannot_be_rebooked(self):
+        doc_user, doctor = self._create_doctor()
+        _, patient1 = self._create_patient(email="pat1@example.com")
+        _, patient2 = self._create_patient(email="pat2@example.com")
+        slot = self._create_slot(doctor, start="23:00", end="23:30")
+        slot.date = timezone.now().date()
+        slot.save()
+
+        Appointment.objects.create(patient=patient1, time_slot=slot)
+        slot.is_booked = True
+        slot.save(update_fields=["is_booked"])
+
+        with self.assertRaises(SlotAlreadyBooked):
+            book_appointment(slot, patient2)
 
 
 class DoctorAppointmentTests(AppointmentTestCase):
