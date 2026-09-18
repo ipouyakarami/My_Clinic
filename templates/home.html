@@ -308,10 +308,17 @@
         <!-- 1. Brand and registration -->
         <header class="hero-nav">
             <a href="/" class="hero-brand">MyClinic</a>
-            <a href="{% url 'accounts:patient_signup' %}" class="register-btn">
-                <span></span><span></span><span></span><span></span>
-                Register
-            </a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'accounts:dashboard' %}" class="register-btn">
+                    <span></span><span></span><span></span><span></span>
+                    Dashboard
+                </a>
+            {% else %}
+                <a href="{% url 'accounts:patient_signup' %}" class="register-btn">
+                    <span></span><span></span><span></span><span></span>
+                    Register
+                </a>
+            {% endif %}
         </header>
 
         <!-- 2. Main heading -->
