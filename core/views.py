@@ -66,6 +66,15 @@ class DoctorDetailView(DetailView):
 class AppointmentFeatureView(TemplateView):
     template_name = "core/appointment_feature.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["featured_doctors"] = (
+            Doctor.objects.filter(user__is_active=True, is_verified=True)
+            .select_related("user")
+            .order_by("user__last_name", "user__first_name")[:6]
+        )
+        return context
+
 
 class MedicationFeatureView(TemplateView):
     template_name = "core/medication_feature.html"

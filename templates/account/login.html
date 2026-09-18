@@ -8,6 +8,7 @@
 {% block footer %}{% endblock %}
 
 {% block content %}
+    {% include "accounts/_auth_brand.html" %}
     <div class="login-box">
         <p>Log In</p>
         <form method="post" action="{% url 'account_login' %}" novalidate>

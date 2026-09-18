@@ -58,13 +58,9 @@
         {% block content %}{% endblock %}
     </main>
 
-    {% block footer %}
-    <footer class="mt-auto border-t border-slate-200 bg-white">
-        <div class="mx-auto max-w-6xl px-4 py-6 text-center text-sm text-slate-500">
-            MyClinic — Doctor appointment booking &amp; medication tracking
-        </div>
-    </footer>
-    {% endblock %}
+{% block footer %}
+    {% include "_footer.html" %}
+{% endblock %}
 
     <script src="{% static 'js/flatpickr.min.js' %}"></script>
     <script src="{% static 'js/flatpickr-init.js' %}"></script>

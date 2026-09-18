@@ -4,8 +4,8 @@
 
         <div class="hidden items-center gap-6 md:flex">
             <a href="{% url 'accounts:dashboard' %}" class="text-sm text-white transition hover:text-slate-300">Dashboard</a>
-            <a href="{% url 'core:doctor_list' %}" class="text-sm text-white transition hover:text-slate-300">Appointment</a>
-            <a href="{% url 'medications:medication_list' %}" class="text-sm text-white transition hover:text-slate-300">Medication</a>
+            <a href="{% url 'core:appointment_info' %}" class="text-sm text-white transition hover:text-slate-300">Appointment</a>
+            <a href="{% url 'core:medication_info' %}" class="text-sm text-white transition hover:text-slate-300">Medication</a>
         </div>
 
         <div class="hidden items-center gap-3 md:flex">
@@ -51,8 +51,8 @@
 
     <div class="flex flex-col gap-4">
         <a href="{% url 'accounts:dashboard' %}" class="rounded-lg px-3 py-2 text-sm text-white transition hover:bg-white/10">Dashboard</a>
-        <a href="{% url 'core:doctor_list' %}" class="rounded-lg px-3 py-2 text-sm text-white transition hover:bg-white/10">Appointment</a>
-        <a href="{% url 'medications:medication_list' %}" class="rounded-lg px-3 py-2 text-sm text-white transition hover:bg-white/10">Medication</a>
+        <a href="{% url 'core:appointment_info' %}" class="rounded-lg px-3 py-2 text-sm text-white transition hover:bg-white/10">Appointment</a>
+        <a href="{% url 'core:medication_info' %}" class="rounded-lg px-3 py-2 text-sm text-white transition hover:bg-white/10">Medication</a>
     </div>
 
     <div class="mt-auto flex flex-col gap-3 border-t border-white/20 pt-4">

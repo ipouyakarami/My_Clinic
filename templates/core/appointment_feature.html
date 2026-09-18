@@ -7,149 +7,114 @@
     <title>Book Appointments — MyClinic</title>
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
     <link rel="stylesheet" href="{% static 'css/background.css' %}">
-    <style>
-        .feature-main {
-            max-width: 88rem;
-            margin: 0 auto;
-            padding: clamp(2rem, 6vw, 6rem) 2rem;
-            text-align: center;
-        }
-
-        .feature-title {
-            margin: 0 0 1rem;
-            font-size: clamp(2.25rem, 6vw, 4rem);
-            font-weight: 800;
-            color: #0f172a;
-            line-height: 1.1;
-        }
-
-        .feature-lead {
-            max-width: 48rem;
-            margin: 0 auto 3rem;
-            font-size: clamp(1rem, 2vw, 1.25rem);
-            line-height: 1.6;
-            color: #475569;
-        }
-
-        .feature-steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
-        }
-
-        .feature-step {
-            background: #fff;
-            border-radius: 1rem;
-            box-shadow: 0 1rem 2rem rgba(15, 23, 42, 0.1);
-            padding: 2rem 1.5rem;
-            text-align: left;
-        }
-
-        .feature-step .step-num {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 999px;
-            background: #4e598c;
-            color: #fff;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .feature-step h3 {
-            margin: 0 0 0.5rem;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .feature-step p {
-            margin: 0;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            color: #64748b;
-        }
-
-        .btn-neon {
-            display: inline-block;
-            padding: 12px 24px;
-            margin: 0 0.5rem 1rem;
-            background: rgba(0, 0, 0, 0.9);
-            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.6);
-            border-radius: 10px;
-            font-weight: bold;
-            color: #fff;
-            font-size: 14px;
-            text-decoration: none;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            position: relative;
-            overflow: hidden;
-            white-space: nowrap;
-            transition: 0.5s;
-        }
-
-        .btn-neon:hover {
-            background: #fff;
-            color: #272727;
-        }
-
-        .back-home {
-            display: inline-block;
-            margin: 0 0.5rem;
-            padding: 12px 24px;
-            color: #334155;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        .back-home:hover {
-            color: #4e598c;
-            text-decoration: underline;
-        }
-    </style>
 </head>
 <body class="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased">
 <div class="container"></div>
 
 {% include "_header.html" %}
 
-<main class="feature-main">
-    <h1 class="feature-title">Book Appointments</h1>
-    <p class="feature-lead">
-        Choose a doctor, pick a convenient time, and confirm your appointment in seconds.
-        MyClinic shows each doctor's working hours and live availability, so you never show up unwelcome.
-    </p>
+<main class="mx-auto max-w-6xl px-4 pb-16">
+    <section class="flex flex-col items-center gap-8 md:flex-row md:items-center md:justify-between">
+        <img src="{% static 'images/appoinment1.png' %}"
+             alt="Book appointment online"
+             class="w-full max-w-xl rounded-2xl object-cover shadow-xl md:w-1/2">
 
-    <div class="feature-steps">
-        <div class="feature-step">
-            <span class="step-num">1</span>
-            <h3>Browse doctors</h3>
-            <p>Explore verified doctors, their specialties, and profiles to find the right match for your needs.</p>
-        </div>
-        <div class="feature-step">
-            <span class="step-num">2</span>
-            <h3>Pick a time slot</h3>
-            <p>See each doctor's working hours and open slots, then choose the time that fits your schedule.</p>
-        </div>
-        <div class="feature-step">
-            <span class="step-num">3</span>
-            <h3>Get confirmed instantly</h3>
-            <p>Your booking is confirmed right away and shows up in your appointments dashboard. Reschedule or cancel anytime.</p>
-        </div>
-    </div>
+        <h1 class="max-w-xl text-center text-3xl font-extrabold leading-tight text-slate-900 sm:text-4xl md:text-left lg:text-5xl">
+            Booking an appointment online is easy
+        </h1>
+    </section>
 
-    <div>
-        <a href="{% url 'core:doctor_list' %}" class="btn-neon">
-            Browse Doctors
-        </a>
-        <a href="/" class="back-home">Back to Home</a>
-    </div>
+    <section class="mt-16 flex flex-col items-center gap-8 md:flex-row-reverse md:items-center md:justify-between">
+        <img src="{% static 'images/appointment2.png' %}"
+             alt="Choose your doctor"
+             class="w-full max-w-xl rounded-2xl object-cover shadow-xl md:w-1/2">
+
+        <h1 class="max-w-xl text-center text-3xl font-extrabold leading-tight text-slate-900 sm:text-4xl md:text-right lg:text-5xl">
+            Just choose your doctor and book appointment with one click
+        </h1>
+    </section>
+
+    <section class="mt-16 flex min-h-[40rem] flex-col items-center gap-8 md:min-h-[44rem] md:flex-row md:items-center md:justify-between">
+        <div class="w-full max-w-2xl md:w-3/5" data-doctor-carousel>
+            {% if featured_doctors %}
+                <div data-carousel-viewport class="hide-scrollbar flex gap-4 overflow-x-auto pb-2 pt-8">
+                    {% for doctor in featured_doctors %}
+                        <div data-carousel-item class="w-80 shrink-0">
+                            {% include "core/_doctor_card.html" with doctor=doctor %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <a href="{% url 'core:doctor_list' %}"
+                   class="mt-5 block text-center text-sm font-semibold text-primary transition hover:text-primary/80 hover:underline">
+                    See All Doctors
+                </a>
+            {% else %}
+                <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+                    <p class="font-medium text-slate-700">No doctors available yet.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <h1 class="max-w-sm text-center text-3xl font-extrabold leading-tight text-slate-900 sm:text-4xl md:text-right lg:text-5xl">
+            See our doctors
+        </h1>
+    </section>
 </main>
+
+<script>
+    (function () {
+        var carousels = document.querySelectorAll("[data-doctor-carousel]");
+        carousels.forEach(function (carousel) {
+            var viewport = carousel.querySelector("[data-carousel-viewport]");
+            var items = carousel.querySelectorAll("[data-carousel-item]");
+            if (!viewport || items.length === 0) return;
+
+            var reduceMotion = window.matchMedia &&
+                window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+            // Continuous infinite auto-scroll
+            var singleMax = viewport.scrollWidth - viewport.clientWidth;
+            var loopPoint = singleMax + viewport.clientWidth;
+            var rafId = null;
+            var paused = false;
+
+            items.forEach(function (item) {
+                viewport.appendChild(item.cloneNode(true));
+            });
+
+            function tick() {
+                if (paused || reduceMotion) return;
+                viewport.scrollLeft += 1;
+                if (viewport.scrollLeft >= loopPoint) {
+                    viewport.scrollLeft -= loopPoint;
+                }
+                rafId = requestAnimationFrame(tick);
+            }
+
+            function startAutoplay() {
+                if (rafId) cancelAnimationFrame(rafId);
+                if (reduceMotion) return;
+                paused = false;
+                rafId = requestAnimationFrame(tick);
+            }
+
+            function stopAutoplay() {
+                paused = true;
+                if (rafId) cancelAnimationFrame(rafId);
+                rafId = null;
+            }
+
+            carousel.addEventListener("mouseenter", stopAutoplay);
+            carousel.addEventListener("mouseleave", startAutoplay);
+            window.addEventListener("resize", startAutoplay);
+
+            startAutoplay();
+        });
+    })();
+</script>
+
+{% include "_footer.html" %}
 
 </body>
 </html>
