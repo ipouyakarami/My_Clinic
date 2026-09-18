@@ -4,8 +4,8 @@
 
 {% block content %}
     <div class="mx-auto max-w-2xl space-y-6">
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
-            <h1 class="mb-6 text-2xl font-bold text-slate-900">Set Working Hours</h1>
+        <div class="service-box">
+            <h1 class="mb-6 text-2xl font-bold text-white">Set Working Hours</h1>
 
             <form method="post">
                 {% csrf_token %}
@@ -16,27 +16,34 @@
                         {% endfor %}
                     </div>
                 {% endif %}
-                {% for field in form %}
-                    <div class="mb-4">
-                        <label class="mb-1 block text-sm font-medium text-slate-700">{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.errors %}
-                            <p class="mt-1 text-xs text-red-600">{{ field.errors|striptags }}</p>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-                <button type="submit" class="rounded-lg bg-primary px-5 py-2.5 text-white hover:bg-primary/90">
-                    Create Slots
-                </button>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {% for field in form %}
+                        <div>
+                            <label for="{{ field.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-300">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <p class="mt-1 text-xs text-red-700">{% for error in field.errors %}{{ error }}{% endfor %}</p>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-6 flex items-center gap-3">
+                    <button type="submit" class="auth-btn">
+                        <span></span><span></span><span></span><span></span>
+                        Create Slots
+                    </button>
+                </div>
             </form>
         </div>
 
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
-            <h2 class="mb-4 text-lg font-bold text-slate-900">Search by Date</h2>
+        <div class="service-box">
+            <h2 class="mb-4 text-lg font-bold text-white">Search by Date</h2>
             <form method="get" class="flex flex-wrap items-end gap-3">
                 <div class="flex-1 min-w-[200px]">
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Date</label>
-                    <select name="date" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" onchange="this.form.submit()">
+                    <label for="search-date" class="mb-1 block text-sm font-medium text-slate-300">Date</label>
+                    <select name="date" id="search-date" class="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-white focus:border-white/40 focus:outline-none" onchange="this.form.submit()">
                         <option value="">All Upcoming Dates</option>
                         {% for d in available_dates %}
                             <option value="{{ d.gregorian|date:'Y-m-d' }}" {% if selected_date == d.gregorian|date:'Y-m-d' %}selected{% endif %}>
@@ -46,7 +53,7 @@
                     </select>
                 </div>
                 {% if selected_date %}
-                    <a href="." class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    <a href="." class="rounded-lg border border-white/30 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">
                         Clear
                     </a>
                 {% endif %}
@@ -54,24 +61,24 @@
         </div>
 
         {% if upcoming_slots %}
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
-                <h2 class="mb-4 text-lg font-bold text-slate-900">
+            <div class="service-box">
+                <h2 class="mb-4 text-lg font-bold text-white">
                     {% if selected_date %}Slots for {{ selected_date }}{% else %}Upcoming Slots{% endif %}
                 </h2>
                 <div class="space-y-3">
                     {% for slot in upcoming_slots %}
-                        <div class="flex items-center justify-between rounded-xl border border-slate-100 p-4">
+                        <div class="flex items-center justify-between rounded-xl bg-white/10 p-4">
                             <div>
-                                <p class="font-bold text-slate-900">{{ slot.date|date:"Y/m/d" }}</p>
-                                <p class="text-sm text-slate-500">{{ slot.start_time|time:"H:i" }} to {{ slot.end_time|time:"H:i" }}</p>
+                                <p class="font-bold text-white">{{ slot.date|date:"Y/m/d" }}</p>
+                                <p class="mt-1 text-sm text-slate-400">{{ slot.start_time|time:"H:i" }} to {{ slot.end_time|time:"H:i" }}</p>
                                 {% if slot.is_booked %}
-                                    <span class="mt-1 inline-block rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-primary">Booked</span>
+                                    <span class="mt-2 inline-block rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-primary">Booked</span>
                                 {% endif %}
                             </div>
                             {% if not slot.is_booked %}
-                                <form method="post" action="{% url 'appointments:time_slot_delete' slot.pk %}" onsubmit="return confirm('Are you sure?')">
+                                <form method="post" action="{% url 'appointments:time_slot_delete' pk=slot.pk %}" onsubmit="return confirm('Are you sure?')">
                                     {% csrf_token %}
-                                    <button type="submit" class="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-100">
+                                    <button type="submit" class="rounded-lg bg-red-500/90 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-500">
                                         Delete
                                     </button>
                                 </form>
