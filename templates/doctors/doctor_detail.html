@@ -3,56 +3,56 @@
 {% block title %}Dr. {{ doctor.user.get_full_name }} — MyClinic{% endblock %}
 
 {% block content %}
-    <a href="{% url 'core:doctor_list' %}" class="text-sm font-medium text-primary hover:underline">&larr; Back to Doctors</a>
+    <a href="{% url 'core:doctor_list' %}" class="text-sm font-medium text-slate-600 underline-offset-2 transition hover:text-black hover:underline">&larr; Back to Doctors</a>
 
     <div class="mx-auto mt-6 max-w-3xl space-y-6 pb-4">
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <div class="service-box">
             <div class="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-6">
                 {% if doctor.profile_picture %}
                     <img src="{{ doctor.profile_picture.url }}" alt="{{ doctor.user.get_full_name }}" class="h-24 w-24 shrink-0 rounded-full object-cover">
                 {% else %}
-                    <span class="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-primary/10 text-3xl font-bold text-primary">{{ doctor.user.first_name|slice:":1"|default:"D" }}</span>
+                    <span class="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-white/10 text-3xl font-bold text-white">{{ doctor.user.first_name|slice:":1"|default:"D" }}</span>
                 {% endif %}
                 <div class="text-center sm:text-start">
                     <div class="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                        <h1 class="text-2xl font-bold text-black">Dr. {{ doctor.user.get_full_name }}</h1>
+                        <h1 class="text-2xl font-bold text-white">Dr. {{ doctor.user.get_full_name }}</h1>
                         {% if doctor.is_verified %}
-                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-1 text-xs font-medium text-emerald-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
                                 Verified
                             </span>
                         {% endif %}
                     </div>
-                    <p class="mt-2 text-primary">{{ doctor.specialty }}</p>
+                    <p class="mt-2 text-slate-400">{{ doctor.specialty }}</p>
                 </div>
             </div>
 
-            <div class="mt-6 border-t border-slate-100 pt-6">
-                <h2 class="font-bold text-black">About the Doctor</h2>
-                <p class="mt-3 leading-loose text-slate-600">{{ doctor.description|linebreaksbr }}</p>
+            <div class="mt-6 border-t border-white/10 pt-6">
+                <h2 class="font-bold text-white">About the Doctor</h2>
+                <p class="mt-3 leading-loose text-slate-400">{{ doctor.description|linebreaksbr }}</p>
             </div>
         </div>
 
         {% if available_slots %}
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-                <h2 class="mb-4 font-bold text-black">Available Appointments</h2>
+            <div class="service-box">
+                <h2 class="mb-4 font-bold text-white">Available Appointments</h2>
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {% for slot in available_slots %}
-                        <div class="rounded-2xl border border-slate-200 p-4 text-center">
-                            <p class="text-sm text-slate-500">{{ slot.date|date:"Y/m/d" }}</p>
-                            <p class="mt-1 font-bold text-primary">{{ slot.start_time|time:"H:i" }} — {{ slot.end_time|time:"H:i" }}</p>
+                        <div class="rounded-lg bg-white/10 p-4 text-center">
+                            <p class="text-sm text-slate-400">{{ slot.date|date:"Y/m/d" }}</p>
+                            <p class="mt-1 font-bold text-sky-400">{{ slot.start_time|time:"H:i" }} — {{ slot.end_time|time:"H:i" }}</p>
                             {% if user.is_authenticated and user.user_type == 'patient' %}
                                 <a href="{% url 'appointments:book_appointment' doctor_id=doctor.pk %}?slot={{ slot.pk }}"
-                                   class="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-sm text-white hover:bg-primary/90">
+                                   class="mt-3 inline-block rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-slate-200">
                                     Book Appointment
                                 </a>
                             {% elif not user.is_authenticated %}
                                 <a href="{% url 'account_login' %}?next={{ request.path }}"
-                                   class="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-sm text-white hover:bg-primary/90">
+                                   class="mt-3 inline-block rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-slate-200">
                                     Log In to Book
                                 </a>
                             {% else %}
-                                <span class="mt-3 inline-block rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-500">
+                                <span class="mt-3 inline-block rounded-lg border border-white/30 px-4 py-2 text-sm text-slate-400">
                                     Patients Only
                                 </span>
                             {% endif %}
@@ -61,9 +61,9 @@
                 </div>
             </div>
         {% else %}
-            <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-                <h2 class="font-bold text-slate-800">Book Appointment</h2>
-                <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+            <div class="service-box p-8 text-center">
+                <h2 class="font-bold text-white">Book Appointment</h2>
+                <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-400">
                     This doctor's appointment calendar will be displayed after working hours are set via the admin panel.
                 </p>
             </div>

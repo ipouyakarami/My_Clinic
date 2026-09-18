@@ -71,6 +71,19 @@
             </span>
         </a>
 
+        <a href="{% url 'medical_tests:medical_test_list' %}"
+           class="service-box group flex flex-col gap-4">
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-white transition group-hover:bg-white/20">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                </svg>
+            </span>
+            <span>
+                <span class="block font-semibold text-white">My Uploaded Files</span>
+                <span class="mt-1 block text-sm text-slate-400">Download and manage your files</span>
+            </span>
+        </a>
+
         <a href="{% url 'accounts:telegram_connect' %}"
            class="service-box group flex flex-col gap-4">
             <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-white transition group-hover:bg-white/20">
