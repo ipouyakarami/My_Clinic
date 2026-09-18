@@ -321,49 +321,19 @@
 
         <!-- 3. Book appointment, hero image, and medication -->
         <div class="hero-actions">
-            <a href="{% url 'core:doctor_list' %}" class="btn-neon">
+            <a href="{% url 'core:appointment_info' %}" class="btn-neon">
                 <span></span><span></span><span></span><span></span>
                 Book Appointment
             </a>
 
             <div class="hero-image-wrapper">
-                <!-- Info Card 1 -->
-                <div class="info-card absolute -top-4 -left-4 hidden sm:block">
-                    <div class="flex items-center gap-2 sm:gap-3">
-                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                            <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="text-xs sm:text-sm font-semibold text-slate-900">Appointment Booked</p>
-                            <p class="text-xs text-slate-500">Dr. Smith - Today 3PM</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Info Card 2 -->
-                <div class="info-card absolute bottom-8 -right-2 hidden sm:block">
-                    <div class="flex items-center gap-2 sm:gap-3">
-                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                            <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="text-xs sm:text-sm font-semibold text-slate-900">Medication Reminder</p>
-                            <p class="text-xs text-slate-500">Take aspirin - 8:00 AM</p>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Main Image -->
                 <img src="{% static 'images/hero_image.png' %}"
                      alt="Healthcare Professional"
                      class="relative z-10 w-full h-auto object-contain object-bottom drop-shadow-2xl">
             </div>
 
-            <a href="{% url 'medications:medication_list' %}" class="btn-neon">
+            <a href="{% url 'core:medication_info' %}" class="btn-neon">
                 <span></span><span></span><span></span><span></span>
                 Set Medication
             </a>
@@ -378,31 +348,6 @@
 <script src="{% static 'js/flatpickr-init.js' %}"></script>
 <script>
     (function () {
-        var toggle = document.querySelector("[data-nav-toggle]");
-        var panel = document.querySelector("[data-nav-panel]");
-        if (toggle && panel) {
-            function setOpen(open) {
-                panel.classList.toggle("hidden", !open);
-                toggle.setAttribute("aria-expanded", open ? "true" : "false");
-            }
-            toggle.addEventListener("click", function () {
-                setOpen(panel.classList.contains("hidden"));
-            });
-            document.addEventListener("keydown", function (e) {
-                if (e.key === "Escape" && !panel.classList.contains("hidden")) {
-                    setOpen(false);
-                    toggle.focus();
-                }
-            });
-            document.addEventListener("click", function (e) {
-                if (!panel.classList.contains("hidden") &&
-                    !panel.contains(e.target) &&
-                    !toggle.contains(e.target)) {
-                    setOpen(false);
-                }
-            });
-        }
-
         var carousels = document.querySelectorAll("[data-doctor-carousel]");
         carousels.forEach(function (carousel) {
             var viewport = carousel.querySelector("[data-carousel-viewport]");

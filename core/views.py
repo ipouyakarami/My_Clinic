@@ -61,3 +61,11 @@ class DoctorDetailView(DetailView):
             .select_related("doctor", "doctor__user")
         )
         return context
+
+
+class AppointmentFeatureView(TemplateView):
+    template_name = "core/appointment_feature.html"
+
+
+class MedicationFeatureView(TemplateView):
+    template_name = "core/medication_feature.html"

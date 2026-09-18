@@ -1,0 +1,155 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Medications — MyClinic</title>
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/background.css' %}">
+    <style>
+        .feature-main {
+            max-width: 88rem;
+            margin: 0 auto;
+            padding: clamp(2rem, 6vw, 6rem) 2rem;
+            text-align: center;
+        }
+
+        .feature-title {
+            margin: 0 0 1rem;
+            font-size: clamp(2.25rem, 6vw, 4rem);
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.1;
+        }
+
+        .feature-lead {
+            max-width: 48rem;
+            margin: 0 auto 3rem;
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            line-height: 1.6;
+            color: #475569;
+        }
+
+        .feature-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .feature-step {
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 1rem 2rem rgba(15, 23, 42, 0.1);
+            padding: 2rem 1.5rem;
+            text-align: left;
+        }
+
+        .feature-step .step-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 999px;
+            background: #4e598c;
+            color: #fff;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .feature-step h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .feature-step p {
+            margin: 0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #64748b;
+        }
+
+        .btn-neon {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 0 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.9);
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            font-weight: bold;
+            color: #fff;
+            font-size: 14px;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: 0.5s;
+        }
+
+        .btn-neon:hover {
+            background: #fff;
+            color: #272727;
+        }
+
+        .back-home {
+            display: inline-block;
+            margin: 0 0.5rem;
+            padding: 12px 24px;
+            color: #334155;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .back-home:hover {
+            color: #4e598c;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased">
+<div class="container"></div>
+
+{% include "_header.html" %}
+
+<main class="feature-main">
+    <h1 class="feature-title">Set Medications</h1>
+    <p class="feature-lead">
+        Log every medication and never miss a dose. MyClinic tracks your schedule and reminds you
+        exactly when it is time to take each medicine — plus notifies you ahead of time before refills run out.
+    </p>
+
+    <div class="feature-steps">
+        <div class="feature-step">
+            <span class="step-num">1</span>
+            <h3>Add your medications</h3>
+            <p>List each medicine with its dosage, frequency, and when to start and stop taking it.</p>
+        </div>
+        <div class="feature-step">
+            <span class="step-num">2</span>
+            <h3>Set your reminder</h3>
+            <p>Choose the exact times for each dose. Reminders reach you by email and Telegram.</p>
+        </div>
+        <div class="feature-step">
+            <span class="step-num">3</span>
+            <h3>Track it day by day</h3>
+            <p>Follow your whole plan on a medication calendar and record that every dose was taken.</p>
+        </div>
+    </div>
+
+    <div>
+        <a href="{% url 'medications:medication_list' %}" class="btn-neon">
+            Start Tracking
+        </a>
+        <a href="/" class="back-home">Back to Home</a>
+    </div>
+</main>
+
+</body>
+</html>

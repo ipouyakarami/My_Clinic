@@ -12,6 +12,14 @@
     --color-accent: #f9c784;
 }
 
+@media (max-width: 767px) {
+    html,
+    body {
+        overflow-x: hidden;
+        max-width: 100%;
+    }
+}
+
 @utility hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;

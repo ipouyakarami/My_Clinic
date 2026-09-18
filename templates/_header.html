@@ -1,0 +1,102 @@
+<header class="fixed left-0 right-0 top-5 z-50 mx-auto flex w-full items-center md:w-4/5 md:rounded-3xl md:bg-black">
+    <nav class="flex w-full items-center justify-between gap-4 px-4 py-4 text-black md:text-white">
+        <a href="/" class="text-lg font-bold text-black md:text-white">MyClinic</a>
+
+        <div class="hidden items-center gap-6 md:flex">
+            <a href="{% url 'accounts:dashboard' %}" class="text-sm text-white transition hover:text-slate-300">Dashboard</a>
+            <a href="{% url 'core:doctor_list' %}" class="text-sm text-white transition hover:text-slate-300">Appointment</a>
+            <a href="{% url 'medications:medication_list' %}" class="text-sm text-white transition hover:text-slate-300">Medication</a>
+        </div>
+
+        <div class="hidden items-center gap-3 md:flex">
+            {% if user.is_authenticated %}
+                <span class="text-sm font-medium text-white">{{ user.get_full_name }}</span>
+                <form method="post" action="{% url 'account_logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="rounded-md border border-white/40 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10">
+                        Log Out
+                    </button>
+                </form>
+            {% else %}
+                <a href="{% url 'accounts:patient_signup' %}"
+                   class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700">Register</a>
+            {% endif %}
+        </div>
+
+        <button id="menu-toggle" type="button" aria-label="Open menu"
+                class="flex h-10 w-10 items-center justify-center rounded-lg text-black transition hover:bg-black/5 md:hidden md:text-white md:hover:bg-white/10">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+    </nav>
+</header>
+
+<div class="h-24 w-full" aria-hidden="true"></div>
+
+<div id="menu-overlay" class="fixed inset-0 z-[55] hidden bg-black/50 md:hidden"></div>
+
+<aside id="sidebar" aria-label="Mobile menu"
+       class="fixed inset-y-0 right-0 z-[60] flex w-72 translate-x-full flex-col gap-6 bg-black px-6 py-6 text-white shadow-2xl transition-transform duration-300 ease-in-out">
+
+    <div class="flex items-center justify-between">
+        <a href="/" class="text-lg font-bold text-white">MyClinic</a>
+        <button id="menu-close" type="button" aria-label="Close menu"
+                class="flex h-10 w-10 items-center justify-center rounded-lg text-white transition hover:bg-white/10">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="flex flex-col gap-4">
+        <a href="{% url 'accounts:dashboard' %}" class="rounded-lg px-3 py-2 text-sm text-white transition hover:bg-white/10">Dashboard</a>
+        <a href="{% url 'core:doctor_list' %}" class="rounded-lg px-3 py-2 text-sm text-white transition hover:bg-white/10">Appointment</a>
+        <a href="{% url 'medications:medication_list' %}" class="rounded-lg px-3 py-2 text-sm text-white transition hover:bg-white/10">Medication</a>
+    </div>
+
+    <div class="mt-auto flex flex-col gap-3 border-t border-white/20 pt-4">
+        {% if user.is_authenticated %}
+            <span class="text-sm font-medium text-white">{{ user.get_full_name }}</span>
+            <form method="post" action="{% url 'account_logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full rounded-md border border-white/40 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10">
+                    Log Out
+                </button>
+            </form>
+        {% else %}
+            <a href="{% url 'accounts:patient_signup' %}"
+               class="w-full rounded-md bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-slate-700">Register</a>
+        {% endif %}
+    </div>
+</aside>
+
+<script>
+    (function () {
+        var toggle = document.getElementById("menu-toggle");
+        var close = document.getElementById("menu-close");
+        var overlay = document.getElementById("menu-overlay");
+        var sidebar = document.getElementById("sidebar");
+        if (!toggle || !close || !overlay || !sidebar) return;
+
+        function openMenu() {
+            sidebar.classList.remove("translate-x-full");
+            sidebar.classList.add("translate-x-0");
+            overlay.classList.remove("hidden");
+        }
+
+        function closeMenu() {
+            sidebar.classList.add("translate-x-full");
+            sidebar.classList.remove("translate-x-0");
+            overlay.classList.add("hidden");
+        }
+
+        toggle.addEventListener("click", openMenu);
+        close.addEventListener("click", closeMenu);
+        overlay.addEventListener("click", closeMenu);
+
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") closeMenu();
+        });
+    })();
+</script>
