@@ -3,23 +3,30 @@
 {% block title %}Confirm Appointment Booking — MyClinic{% endblock %}
 
 {% block content %}
-    <div class="mx-auto max-w-2xl">
-        <h1 class="mb-6 text-2xl font-bold text-slate-900">Confirm Appointment Booking</h1>
+    <div class="mx-auto max-w-2xl space-y-6">
+        <div class="service-box">
+            <h1 class="mb-6 text-2xl font-bold text-white">Confirm Appointment Booking</h1>
 
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
-            <p class="mb-4 text-slate-700">You are about to book the following appointment:</p>
-            <div class="mb-6 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
-                <p><strong>Doctor:</strong> Dr. {{ slot.doctor.user.get_full_name }}</p>
-                <p><strong>Date:</strong> {{ slot.date|date:"Y/m/d" }}</p>
-                <p><strong>Time:</strong> {{ slot.start_time|time:"H:i" }} to {{ slot.end_time|time:"H:i" }}</p>
-                <p><strong>Specialty:</strong> {{ slot.doctor.specialty }}</p>
+            <p class="mb-4 text-slate-300">You are about to book the following appointment:</p>
+            <div class="mb-6 space-y-2 rounded-xl border border-white/20 bg-white/5 p-4 text-sm text-slate-300">
+                <p><strong class="text-white">Doctor:</strong> Dr. {{ slot.doctor.user.get_full_name }}</p>
+                <p><strong class="text-white">Date:</strong> {{ slot.date|date:"Y/m/d" }}</p>
+                <p><strong class="text-white">Time:</strong> {{ slot.start_time|time:"H:i" }} to {{ slot.end_time|time:"H:i" }}</p>
+                <p><strong class="text-white">Specialty:</strong> {{ slot.doctor.specialty }}</p>
             </div>
-            <form method="post">
+
+            <form method="post" class="space-y-6">
                 {% csrf_token %}
                 <input type="hidden" name="slot" value="{{ slot.pk }}">
-                <div class="flex gap-3">
-                    <button type="submit" class="rounded-lg bg-primary px-5 py-2.5 text-white hover:bg-primary/90">Confirm & Book</button>
-                    <a href="{% url 'core:doctor_detail' pk=slot.doctor.pk %}" class="rounded-lg border border-slate-300 px-5 py-2.5 text-slate-700 hover:bg-slate-50">Cancel</a>
+                <div class="flex flex-wrap gap-3">
+                    <button type="submit" class="auth-btn">
+                        <span></span><span></span><span></span><span></span>
+                        Confirm & Book
+                    </button>
+                    <a href="{% url 'core:doctor_detail' pk=slot.doctor.pk %}"
+                       class="rounded-lg border border-white/20 bg-white/5 px-5 py-2.5 text-slate-200 hover:bg-white/10">
+                        Cancel
+                    </a>
                 </div>
             </form>
         </div>
