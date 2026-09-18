@@ -2787,7 +2787,7 @@ class TelegramConnectViewTests(TestCase):
         response = self.client.get(reverse("accounts:telegram_connect"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Connect Your Account")
-        self.assertContains(response, "myyclinicbot")
+        self.assertContains(response, "myclinicmedicationreminderbot")
 
     def test_connect_page_shows_connected_status(self):
         patient = self._create_patient()

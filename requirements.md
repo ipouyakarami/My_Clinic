@@ -311,7 +311,7 @@ Patients may optionally link a Telegram account to their MyClinic account. Once 
 | Variable | Description |
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | Bot API token from @BotFather. **Never commit a real token.** Add only to `.env`, document in `.env.example` with no real value. |
-| `TELEGRAM_BOT_USERNAME` | The bot's @username (e.g. `myyclinicbot`), without the `@` prefix. Used for generating links and displaying the bot reference. |
+| `TELEGRAM_BOT_USERNAME` | The bot's @username (e.g. `myclinicmedicationreminderbot`), without the `@` prefix. Used for generating links and displaying the bot reference. |
 
 ### A.3 Data Model
 

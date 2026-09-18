@@ -178,7 +178,7 @@ DEMO_PASSWORD = os.environ.get("DEMO_PASSWORD", "demo1234")
 
 # Telegram bot — token from @BotFather, username from the bot's info page
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "myyclinicbot")
+TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "myclinicmedicationreminderbot")
 
 # Celery — broker + result backend over PostgreSQL via Kombu's SQLAlchemy
 # transport. No separate Redis service: the same DATABASE_URL that backs the

@@ -49,7 +49,7 @@ def get_bot_username():
     username = getattr(settings, "TELEGRAM_BOT_USERNAME", None) or __import__("os").environ.get("TELEGRAM_BOT_USERNAME")
     if username:
         return username.lstrip("@")
-    return "myyclinicbot"
+    return "myclinicmedicationreminderbot"
 
 
 def get_linked_patient(chat_id):
