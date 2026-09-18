@@ -5,41 +5,41 @@
 {% block content %}
 <div class="mx-auto max-w-7xl">
     <div class="mb-6 flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-slate-900">Patient Medications — {{ appointment.patient.user.get_full_name }}</h1>
-        <a href="{% url 'medications:doctor_medication_add' appointment.pk %}" class="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary/90">Add Medication</a>
+        <h1 class="text-2xl font-bold text-black">Patient Medications — {{ appointment.patient.user.get_full_name }}</h1>
+        <a href="{% url 'medications:doctor_medication_add' appointment.pk %}" class="auth-btn"><span></span><span></span><span></span><span></span>Add Medication</a>
     </div>
 
     <div class="mb-4">
-        <a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="text-sm text-primary hover:underline">Back to Appointment Details</a>
+        <a href="{% url 'appointments:appointment_detail' appointment.pk %}" class="text-sm font-medium text-slate-600 underline-offset-2 transition hover:text-black hover:underline">Back to Appointment Details</a>
     </div>
 
     {% if medications %}
         <div class="grid gap-5 md:grid-cols-3">
             {% for med in medications %}
-                <div class="rounded-3xl border border-slate-200 bg-white p-5">
+                <div class="service-box flex flex-col gap-4">
                     <div class="flex items-start justify-between">
                         <div>
-                            <h3 class="text-lg font-bold text-slate-900">{{ med.name }}</h3>
-                            <p class="text-sm text-slate-500">Unit: {{ med.unit }}</p>
+                            <h3 class="text-lg font-bold text-white">{{ med.name }}</h3>
+                            <p class="text-sm text-slate-400">Unit: {{ med.unit }}</p>
                             {% if med.dosage %}
-                                <p class="text-sm text-slate-500">Dosage: {{ med.dosage }}</p>
+                                <p class="text-sm text-slate-400">Dosage: {{ med.dosage }}</p>
                             {% endif %}
                             {% if med.current_inventory %}
-                                <p class="text-sm text-slate-500">Inventory: {{ med.display_inventory }}</p>
+                                <p class="text-sm text-slate-400">Inventory: {{ med.display_inventory }}</p>
                             {% endif %}
                         </div>
                         <div class="flex gap-2">
-                            <a href="{% url 'medications:doctor_medication_edit' appointment.pk med.pk %}" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Edit</a>
-                            <a href="{% url 'medications:doctor_medication_delete' appointment.pk med.pk %}" class="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50">Delete</a>
+                            <a href="{% url 'medications:doctor_medication_edit' appointment.pk med.pk %}" class="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white transition hover:bg-white/10">Edit</a>
+                            <a href="{% url 'medications:doctor_medication_delete' appointment.pk med.pk %}" class="rounded-lg bg-red-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-600">Delete</a>
                         </div>
                     </div>
                 </div>
             {% endfor %}
         </div>
     {% else %}
-        <div class="rounded-3xl border border-slate-200 bg-white p-8 text-center">
-            <p class="text-slate-500">This patient hasn't added any medications yet.</p>
-            <a href="{% url 'medications:doctor_medication_add' appointment.pk %}" class="mt-4 inline-block rounded-lg bg-primary px-5 py-2.5 text-white hover:bg-primary/90">Add Medication</a>
+        <div class="service-box p-8 text-center">
+            <p class="text-slate-400">This patient hasn't added any medications yet.</p>
+            <a href="{% url 'medications:doctor_medication_add' appointment.pk %}" class="auth-btn mt-4"><span></span><span></span><span></span><span></span>Add Medication</a>
         </div>
     {% endif %}
 </div>

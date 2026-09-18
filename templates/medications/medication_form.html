@@ -12,11 +12,11 @@
     <div class="mb-8 flex items-center justify-between">
         {% for i in "123456" %}
             <div class="flex flex-1 flex-col items-center">
-                <div class="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium
-                    {% if step|add:0 >= i|add:0 %}bg-primary text-white{% else %}bg-slate-200 text-slate-500{% endif %}">
+                <div class="step-box flex h-6 w-6 items-center justify-center rounded-[3px] border text-xs font-semibold
+                    {% if step|add:0 >= i|add:0 %}step-box-completed border-[#506eec] bg-[#506eec] text-white{% else %}border-[#9098a9] bg-transparent text-slate-500{% endif %}">
                     {{ i }}
                 </div>
-                <span class="mt-1 text-xs text-slate-500">Step {{ i }}</span>
+                <span class="mt-1 text-xs text-slate-400">Step {{ i }}</span>
             </div>
             {% if not forloop.last %}
                 <div class="mx-2 h-0.5 flex-1 bg-slate-200"></div>
@@ -29,15 +29,15 @@
         <input type="hidden" name="step" value="{{ step }}">
 
         {% if step == 1 %}
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 space-y-4">
-                <h2 class="text-lg font-bold text-slate-900">Medication Name & Unit</h2>
+            <div class="service-box space-y-4">
+                <h2 class="text-lg font-bold text-white">Medication Name & Unit</h2>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Medication Name</label>
+                    <label class="mb-1 block text-sm font-medium text-slate-300">Medication Name</label>
                     {{ form.name }}
                     {% if form.name.errors %}<p class="mt-1 text-xs text-red-700">{{ form.name.errors|join:", " }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Unit</label>
+                    <label class="mb-1 block text-sm font-medium text-slate-300">Unit</label>
                     {{ form.unit }}
                     {% if form.unit.errors %}<p class="mt-1 text-xs text-red-700">{{ form.unit.errors|join:", " }}</p>{% endif %}
                 </div>
@@ -45,35 +45,48 @@
         {% endif %}
 
         {% if step == 2 %}
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 space-y-4">
-                <h2 class="text-lg font-bold text-slate-900">Frequency Type</h2>
+            <div class="service-box space-y-4">
+                <h2 class="text-lg font-bold text-white">Frequency Type</h2>
                 <div class="space-y-2">
-                    {{ form.frequency_type }}
+                    {% for choice in form.frequency_type.field.choices %}
+                        <div class="checkbox-wrapper-46">
+                            <input type="radio" id="freq-{{ forloop.counter }}" name="frequency_type" value="{{ choice.0 }}" class="inp-cbx"
+                                {% if form.frequency_type.value == choice.0 %}checked{% endif %}>
+                            <label for="freq-{{ forloop.counter }}" class="cbx">
+                                <span>
+                                    <svg viewBox="0 0 12 10" height="10px" width="12px">
+                                        <polyline points="1.5 6 4.5 9 10.5 1"></polyline>
+                                    </svg>
+                                </span>
+                                <span class="text-sm text-slate-300">{{ choice.1 }}</span>
+                            </label>
+                        </div>
+                    {% endfor %}
                     {% if form.frequency_type.errors %}<p class="mt-1 text-xs text-red-700">{{ form.frequency_type.errors|join:", " }}</p>{% endif %}
                 </div>
             </div>
         {% endif %}
 
         {% if step == 3 %}
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 space-y-4">
-                <h2 class="text-lg font-bold text-slate-900">Schedule</h2>
+            <div class="service-box space-y-4">
+                <h2 class="text-lg font-bold text-white">Schedule</h2>
 
                 <input type="hidden" name="frequency_type" id="frequency-type-value" value="{{ frequency_type }}">
 
                 <div id="daily-fields" class="space-y-4 hidden">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Medication Times (one per line)</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-300">Medication Times (one per line)</label>
                         {{ form.medication_times }}
                         {% if form.medication_times.errors %}<p class="mt-1 text-xs text-red-700">{{ form.medication_times.errors|join:", " }}</p>{% endif %}
-                        <p class="mt-1 text-xs text-slate-500">Example: 08:00, 14:00, 20:00</p>
+                        <p class="mt-1 text-xs text-slate-400">Example: 08:00, 14:00, 20:00</p>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Start Date</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-300">Start Date</label>
                         {{ form.start_date }}
                         {% if form.start_date.errors %}<p class="mt-1 text-xs text-red-700">{{ form.start_date.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">End Date (optional)</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-300">End Date (optional)</label>
                         {{ form.end_date }}
                         {% if form.end_date.errors %}<p class="mt-1 text-xs text-red-700">{{ form.end_date.errors|join:", " }}</p>{% endif %}
                     </div>
@@ -81,30 +94,39 @@
 
                 <div id="specific-days-fields" class="space-y-4 hidden">
                     <div>
-                        <label class="mb-2 block text-sm font-medium text-slate-700">Days of the Week</label>
+                        <label class="mb-2 block text-sm font-medium text-slate-300">Days of the Week</label>
                         <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
                             {% for value, label in form.specific_days.field.choices %}
-                                <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
-                                    <input type="checkbox" name="specific_days" value="{{ value }}" class="rounded border-slate-300 text-primary focus:ring-primary"
-                                        {% if value in form.specific_days.value %}checked{% endif %}>
-                                    <span class="text-sm text-slate-700">{{ label }}</span>
-                                </label>
+                                <div class="flex items-center rounded-lg border border-white/20 bg-white/5 px-3 py-2">
+                                    <div class="checkbox-wrapper-46">
+                                        <input type="checkbox" id="cbx-{{ forloop.counter }}" name="specific_days" value="{{ value }}" class="inp-cbx"
+                                            {% if value in form.specific_days.value %}checked{% endif %}>
+                                        <label for="cbx-{{ forloop.counter }}" class="cbx">
+                                            <span>
+                                                <svg viewBox="0 0 12 10" height="10px" width="12px">
+                                                    <polyline points="1.5 6 4.5 9 10.5 1"></polyline>
+                                                </svg>
+                                            </span>
+                                            <span class="text-sm text-slate-300">{{ label }}</span>
+                                        </label>
+                                    </div>
+                                </div>
                             {% endfor %}
                         </div>
                         {% if form.specific_days.errors %}<p class="mt-1 text-xs text-red-700">{{ form.specific_days.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Medication Times (one per line)</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-300">Medication Times (one per line)</label>
                         {{ form.medication_times_specific }}
                         {% if form.medication_times.errors %}<p class="mt-1 text-xs text-red-700">{{ form.medication_times.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Start Date</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-300">Start Date</label>
                         {{ form.start_date_specific }}
                         {% if form.start_date_specific.errors %}<p class="mt-1 text-xs text-red-700">{{ form.start_date_specific.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">End Date (optional)</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-300">End Date (optional)</label>
                         {{ form.end_date_specific }}
                         {% if form.end_date_specific.errors %}<p class="mt-1 text-xs text-red-700">{{ form.end_date_specific.errors|join:", " }}</p>{% endif %}
                     </div>
@@ -112,22 +134,22 @@
 
                 <div id="every-n-days-fields" class="space-y-4 hidden">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Day Interval (N)</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-300">Day Interval (N)</label>
                         {{ form.n_days_interval }}
                         {% if form.n_days_interval.errors %}<p class="mt-1 text-xs text-red-700">{{ form.n_days_interval.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Medication Times (one per line)</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-300">Medication Times (one per line)</label>
                         {{ form.medication_times_n }}
                         {% if form.medication_times.errors %}<p class="mt-1 text-xs text-red-700">{{ form.medication_times.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Start Date</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-300">Start Date</label>
                         {{ form.start_date_n }}
                         {% if form.start_date_n.errors %}<p class="mt-1 text-xs text-red-700">{{ form.start_date_n.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">End Date (optional)</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-300">End Date (optional)</label>
                         {{ form.end_date_n }}
                         {% if form.end_date_n.errors %}<p class="mt-1 text-xs text-red-700">{{ form.end_date_n.errors|join:", " }}</p>{% endif %}
                     </div>
@@ -135,24 +157,24 @@
 
                 <div id="every-x-hours-fields" class="space-y-4 hidden">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Hour Interval (X)</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-300">Hour Interval (X)</label>
                         {{ form.x_hours_interval }}
                         {% if form.x_hours_interval.errors %}<p class="mt-1 text-xs text-red-700">{{ form.x_hours_interval.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-slate-700">Anchor Date</label>
+                            <label class="mb-1 block text-sm font-medium text-slate-300">Anchor Date</label>
                             {{ form.anchor_date }}
                             {% if form.anchor_date.errors %}<p class="mt-1 text-xs text-red-700">{{ form.anchor_date.errors|join:", " }}</p>{% endif %}
                         </div>
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-slate-700">Anchor Time</label>
+                            <label class="mb-1 block text-sm font-medium text-slate-300">Anchor Time</label>
                             {{ form.anchor_time }}
                             {% if form.anchor_time.errors %}<p class="mt-1 text-xs text-red-700">{{ form.anchor_time.errors|join:", " }}</p>{% endif %}
                         </div>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">End Date (optional)</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-300">End Date (optional)</label>
                         {{ form.end_date_x }}
                         {% if form.end_date_x.errors %}<p class="mt-1 text-xs text-red-700">{{ form.end_date_x.errors|join:", " }}</p>{% endif %}
                     </div>
@@ -161,10 +183,10 @@
         {% endif %}
 
         {% if step == 4 %}
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 space-y-4">
-                <h2 class="text-lg font-bold text-slate-900">Dosage</h2>
+            <div class="service-box space-y-4">
+                <h2 class="text-lg font-bold text-white">Dosage</h2>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Amount per intake (e.g. 1 tablet, 5ml)</label>
+                    <label class="mb-1 block text-sm font-medium text-slate-300">Amount per intake (e.g. 1 tablet, 5ml)</label>
                     {{ form.dosage }}
                     {% if form.dosage.errors %}<p class="mt-1 text-xs text-red-700">{{ form.dosage.errors|join:", " }}</p>{% endif %}
                 </div>
@@ -172,15 +194,15 @@
         {% endif %}
 
         {% if step == 5 %}
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 space-y-4">
-                <h2 class="text-lg font-bold text-slate-900">Inventory & Refill Threshold</h2>
+            <div class="service-box space-y-4">
+                <h2 class="text-lg font-bold text-white">Inventory & Refill Threshold</h2>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Current Inventory</label>
+                    <label class="mb-1 block text-sm font-medium text-slate-300">Current Inventory</label>
                     {{ form.current_inventory }}
                     {% if form.current_inventory.errors %}<p class="mt-1 text-xs text-red-700">{{ form.current_inventory.errors|join:", " }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Refill Reminder Threshold (optional)</label>
+                    <label class="mb-1 block text-sm font-medium text-slate-300">Refill Reminder Threshold (optional)</label>
                     {{ form.refill_reminder_threshold }}
                     {% if form.refill_reminder_threshold.errors %}<p class="mt-1 text-xs text-red-700">{{ form.refill_reminder_threshold.errors|join:", " }}</p>{% endif %}
                 </div>
@@ -188,39 +210,39 @@
         {% endif %}
 
         {% if step == 6 %}
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 space-y-4">
-                <h2 class="text-lg font-bold text-slate-900">Review</h2>
+            <div class="service-box space-y-4">
+                <h2 class="text-lg font-bold text-white">Review</h2>
                 <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div class="rounded-lg bg-slate-50 p-3">
-                        <dt class="text-xs text-slate-500">Medication Name</dt>
-                        <dd class="font-medium text-slate-900">{{ review_data.name }} — {{ review_data.unit }}</dd>
+                    <div class="rounded-lg bg-white/10 p-3">
+                        <dt class="text-xs text-slate-400">Medication Name</dt>
+                        <dd class="font-medium text-white">{{ review_data.name }} — {{ review_data.unit }}</dd>
                     </div>
-                    <div class="rounded-lg bg-slate-50 p-3">
-                        <dt class="text-xs text-slate-500">Frequency Type</dt>
-                        <dd class="font-medium text-slate-900">{{ review_data.frequency_type }}</dd>
+                    <div class="rounded-lg bg-white/10 p-3">
+                        <dt class="text-xs text-slate-400">Frequency Type</dt>
+                        <dd class="font-medium text-white">{{ review_data.frequency_type }}</dd>
                     </div>
                     {% if review_data.medication_times %}
-                    <div class="rounded-lg bg-slate-50 p-3">
-                        <dt class="text-xs text-slate-500">Medication Times</dt>
-                        <dd class="font-medium text-slate-900">{{ review_data.medication_times|join:", "|default:"—" }}</dd>
+                    <div class="rounded-lg bg-white/10 p-3">
+                        <dt class="text-xs text-slate-400">Medication Times</dt>
+                        <dd class="font-medium text-white">{{ review_data.medication_times|join:", "|default:"—" }}</dd>
                     </div>
                     {% endif %}
-                    <div class="rounded-lg bg-slate-50 p-3">
-                        <dt class="text-xs text-slate-500">Dosage</dt>
-                        <dd class="font-medium text-slate-900">{{ review_data.dosage|default:"—" }}</dd>
+                    <div class="rounded-lg bg-white/10 p-3">
+                        <dt class="text-xs text-slate-400">Dosage</dt>
+                        <dd class="font-medium text-white">{{ review_data.dosage|default:"—" }}</dd>
                     </div>
-                    <div class="rounded-lg bg-slate-50 p-3">
-                        <dt class="text-xs text-slate-500">Current Inventory</dt>
-                        <dd class="font-medium text-slate-900">{{ review_data.current_inventory }}</dd>
+                    <div class="rounded-lg bg-white/10 p-3">
+                        <dt class="text-xs text-slate-400">Current Inventory</dt>
+                        <dd class="font-medium text-white">{{ review_data.current_inventory }}</dd>
                     </div>
-                    <div class="rounded-lg bg-slate-50 p-3">
-                        <dt class="text-xs text-slate-500">Refill Threshold</dt>
-                        <dd class="font-medium text-slate-900">{{ review_data.refill_reminder_threshold|default:"—" }}</dd>
+                    <div class="rounded-lg bg-white/10 p-3">
+                        <dt class="text-xs text-slate-400">Refill Threshold</dt>
+                        <dd class="font-medium text-white">{{ review_data.refill_reminder_threshold|default:"—" }}</dd>
                     </div>
                     {% if review_data.specific_days %}
-                    <div class="rounded-lg bg-slate-50 p-3 sm:col-span-2">
-                        <dt class="text-xs text-slate-500">Specific Days</dt>
-                        <dd class="font-medium text-slate-900">
+                    <div class="rounded-lg bg-white/10 p-3 sm:col-span-2">
+                        <dt class="text-xs text-slate-400">Specific Days</dt>
+                        <dd class="font-medium text-white">
                             {% for day in review_data.specific_days %}
                                 {% if day == "sat" %}Saturday{% endif %}
                                 {% if day == "sun" %}Sunday{% endif %}
@@ -235,33 +257,33 @@
                     </div>
                     {% endif %}
                     {% if review_data.n_days_interval %}
-                    <div class="rounded-lg bg-slate-50 p-3">
-                        <dt class="text-xs text-slate-500">Day Interval</dt>
-                        <dd class="font-medium text-slate-900">Every {{ review_data.n_days_interval }} day(s)</dd>
+                    <div class="rounded-lg bg-white/10 p-3">
+                        <dt class="text-xs text-slate-400">Day Interval</dt>
+                        <dd class="font-medium text-white">Every {{ review_data.n_days_interval }} day(s)</dd>
                     </div>
                     {% endif %}
                     {% if review_data.x_hours_interval %}
-                    <div class="rounded-lg bg-slate-50 p-3">
-                        <dt class="text-xs text-slate-500">Hour Interval</dt>
-                        <dd class="font-medium text-slate-900">Every {{ review_data.x_hours_interval }} hour(s)</dd>
+                    <div class="rounded-lg bg-white/10 p-3">
+                        <dt class="text-xs text-slate-400">Hour Interval</dt>
+                        <dd class="font-medium text-white">Every {{ review_data.x_hours_interval }} hour(s)</dd>
                     </div>
                     {% endif %}
                     {% if review_data.anchor_datetime %}
-                    <div class="rounded-lg bg-slate-50 p-3">
-                        <dt class="text-xs text-slate-500">Anchor Datetime</dt>
-                        <dd class="font-medium text-slate-900">{{ review_data.anchor_datetime }}</dd>
+                    <div class="rounded-lg bg-white/10 p-3">
+                        <dt class="text-xs text-slate-400">Anchor Datetime</dt>
+                        <dd class="font-medium text-white">{{ review_data.anchor_datetime }}</dd>
                     </div>
                     {% endif %}
                     {% if review_data.start_date %}
-                    <div class="rounded-lg bg-slate-50 p-3">
-                        <dt class="text-xs text-slate-500">Start Date</dt>
-                        <dd class="font-medium text-slate-900">{{ review_data.start_date }}</dd>
+                    <div class="rounded-lg bg-white/10 p-3">
+                        <dt class="text-xs text-slate-400">Start Date</dt>
+                        <dd class="font-medium text-white">{{ review_data.start_date }}</dd>
                     </div>
                     {% endif %}
                     {% if review_data.end_date %}
-                    <div class="rounded-lg bg-slate-50 p-3">
-                        <dt class="text-xs text-slate-500">End Date</dt>
-                        <dd class="font-medium text-slate-900">{{ review_data.end_date }}</dd>
+                    <div class="rounded-lg bg-white/10 p-3">
+                        <dt class="text-xs text-slate-400">End Date</dt>
+                        <dd class="font-medium text-white">{{ review_data.end_date }}</dd>
                     </div>
                     {% endif %}
                 </dl>
@@ -270,11 +292,11 @@
 
         <div class="flex items-center justify-between">
             {% if step > 1 %}
-                <a href="?step={{ step|add:"-1" }}" class="rounded-lg border border-slate-300 px-5 py-2.5 text-slate-700 hover:bg-slate-50">Previous</a>
+                <a href="?step={{ step|add:"-1" }}" class="auth-btn"><span></span><span></span><span></span><span></span>Previous</a>
             {% else %}
-                <a href="{% url 'medications:medication_list' %}" class="rounded-lg border border-slate-300 px-5 py-2.5 text-slate-700 hover:bg-slate-50">Cancel</a>
+                <a href="{% url 'medications:medication_list' %}" class="auth-btn"><span></span><span></span><span></span><span></span>Cancel</a>
             {% endif %}
-            <button type="submit" class="rounded-lg bg-primary px-5 py-2.5 text-white hover:bg-primary/90">
+            <button type="submit" class="auth-btn"><span></span><span></span><span></span><span></span>
                 {% if step == 6 %}Save{% else %}Next{% endif %}
             </button>
         </div>

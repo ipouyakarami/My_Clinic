@@ -6,17 +6,15 @@
 <div class="mx-auto max-w-7xl">
     <h1 class="mb-6 text-2xl font-bold text-slate-900">Medication Calendar</h1>
 
-    <div class="rounded-3xl border border-slate-200 bg-white p-6 mb-6">
+    <div class="service-box mb-6">
         <form id="calendar-form" method="get" action="{% url 'medications:medication_calendar' %}" class="flex flex-wrap items-end gap-3">
             <div class="flex-1 min-w-[200px]">
-                <label for="calendar-picker" class="mb-1 block text-sm font-medium text-slate-700">Select Date</label>
-                <input id="calendar-picker" name="date" type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Select a date...">
+                <label for="calendar-picker" class="mb-1 block text-sm font-medium text-slate-300">Select Date</label>
+                <input id="calendar-picker" name="date" type="text" placeholder="Select a date...">
             </div>
-            <button type="submit" class="rounded-lg bg-primary px-5 py-2 text-white hover:bg-primary/90">
-                Show Medications
-            </button>
+            <button type="submit" class="auth-btn"><span></span><span></span><span></span><span></span>Show Medications</button>
         </form>
-        <p id="date-error" class="mt-3 text-sm text-red-600 hidden"></p>
+        <p id="date-error" class="mt-3 text-sm text-red-400 hidden"></p>
     </div>
 
     <div id="day-intakes" class="space-y-3">
@@ -26,12 +24,12 @@
             </h2>
             {% if intakes_by_time %}
                 {% for time_slot, slot_intakes in intakes_by_time %}
-                    <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                        <p class="mb-2 font-bold text-slate-900">{{ time_slot }}</p>
+                    <div class="service-box">
+                        <p class="mb-2 font-bold text-white">{{ time_slot }}</p>
                         <div class="grid gap-5 md:grid-cols-3">
                             {% for intake in slot_intakes %}
-                                <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                                    <p class="font-medium text-slate-900">{{ intake.medication.name }} — {{ intake.medication.dosage|default:"—" }}</p>
+                                <div class="rounded-xl bg-white/10 p-4">
+                                    <p class="font-medium text-white">{{ intake.medication.name }} — {{ intake.medication.dosage|default:"—" }}</p>
                                     <span class="mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium
                                         {% if intake.status == 'taken' %}bg-emerald-100 text-emerald-800{% endif %}
                                         {% if intake.status == 'pending' %}bg-amber-100 text-amber-800{% endif %}
@@ -40,7 +38,7 @@
                                     {% if intake.status == 'pending' %}
                                         <div class="mt-3 flex gap-2">
                                             <a href="{% url 'medications:intake_taken' intake.token %}" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm text-white hover:bg-emerald-700">Taken</a>
-                                            <a href="{% url 'medications:intake_skipped' intake.token %}" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">Skipped</a>
+                                            <a href="{% url 'medications:intake_skipped' intake.token %}" class="rounded-lg border border-white/30 px-3 py-1.5 text-sm text-white hover:bg-white/10">Skipped</a>
                                         </div>
                                     {% endif %}
                                 </div>
