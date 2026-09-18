@@ -9,6 +9,20 @@
     <link rel="stylesheet" href="{% static 'css/background.css' %}">
     <link rel="stylesheet" href="{% static 'css/auth.css' %}">
     <style>
+        @media (min-width: 1024px) {
+            html,
+            body {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                height: 100%;
+                overflow-y: hidden;
+            }
+            html::-webkit-scrollbar {
+                width: 0;
+                height: 0;
+            }
+        }
+
         @keyframes blob {
             0%, 100% { transform: translate(0, 0) scale(1); }
             33% { transform: translate(30px, -50px) scale(1.1); }
@@ -227,6 +241,14 @@
         }
 
         @media (min-width: 768px) {
+            .hero-nav {
+                position: absolute;
+                top: 30px;
+                left: 0;
+                right: 0;
+                padding: 0 clamp(1rem, 3vw, 2rem);
+            }
+
             .hero-layout {
                 max-width: 96rem;
                 padding: clamp(2rem, 3vw, 5rem);
@@ -243,6 +265,32 @@
             .hero-image-wrapper {
                 width: clamp(26rem, 40vw, 40rem);
                 max-width: 45rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .hero-section {
+                min-height: 100vh;
+                min-height: 100svh;
+            }
+
+            .hero-layout {
+                width: 95vw;
+                min-height: 100vh;
+                min-height: 100svh;
+            }
+
+            .hero-title {
+                margin-bottom: 7rem;
+            }
+
+            .hero-image-wrapper {
+                width: clamp(34rem, 46vw, 54rem);
+                max-width: 54rem;
+            }
+
+            .hero-image-wrapper img {
+                max-height: 62vh;
             }
         }
     </style>
