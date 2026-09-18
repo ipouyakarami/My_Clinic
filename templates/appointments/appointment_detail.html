@@ -3,57 +3,57 @@
 {% block title %}Visit Details — MyClinic{% endblock %}
 
 {% block content %}
-    <div class="mx-auto max-w-3xl">
-        <h1 class="mb-6 text-2xl font-bold text-slate-900">Visit Details</h1>
+    <div class="mx-auto max-w-3xl space-y-6">
+        <div class="service-box">
+            <h1 class="mb-6 text-2xl font-bold text-white">Visit Details</h1>
 
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                    <p class="text-sm text-slate-500">Patient</p>
-                    <p class="font-bold text-slate-900">{{ appointment.patient.user.get_full_name }}</p>
+                    <p class="text-sm text-slate-400">Patient</p>
+                    <p class="font-bold text-white">{{ appointment.patient.user.get_full_name }}</p>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">Doctor</p>
-                    <p class="font-bold text-slate-900">Dr. {{ appointment.time_slot.doctor.user.get_full_name }}</p>
+                    <p class="text-sm text-slate-400">Doctor</p>
+                    <p class="font-bold text-white">Dr. {{ appointment.time_slot.doctor.user.get_full_name }}</p>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">Date</p>
-                    <p class="font-bold text-slate-900">{{ appointment.time_slot.date|date:"Y/m/d" }}</p>
+                    <p class="text-sm text-slate-400">Date</p>
+                    <p class="font-bold text-white">{{ appointment.time_slot.date|date:"Y/m/d" }}</p>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">Time</p>
-                    <p class="font-bold text-slate-900">{{ appointment.time_slot.start_time|time:"H:i" }} to {{ appointment.time_slot.end_time|time:"H:i" }}</p>
+                    <p class="text-sm text-slate-400">Time</p>
+                    <p class="font-bold text-white">{{ appointment.time_slot.start_time|time:"H:i" }} to {{ appointment.time_slot.end_time|time:"H:i" }}</p>
                 </div>
-            </div>
 
-            <div class="mt-6 border-t border-slate-100 pt-6">
-                <p class="mb-2 text-sm text-slate-500">Status</p>
-                <span class="inline-block rounded-full px-3 py-1 text-xs font-medium
-                    {% if appointment.status == 'active' %}bg-accent text-primary{% endif %}
-                    {% if appointment.status == 'completed' %}bg-emerald-50 text-emerald-700{% endif %}
-                    {% if appointment.status == 'cancelled' %}bg-red-50 text-red-700{% endif %}
-                ">
-                    {{ appointment.get_status_display }}
-                </span>
+                <div>
+                    <p class="mb-1 text-sm text-slate-400">Status</p>
+                    <span class="inline-block rounded-full px-3 py-1 text-xs font-medium
+                        {% if appointment.status == 'active' %}bg-accent text-primary{% endif %}
+                        {% if appointment.status == 'completed' %}bg-emerald-50 text-emerald-700{% endif %}
+                        {% if appointment.status == 'cancelled' %}bg-red-50 text-red-700{% endif %}
+                    ">
+                        {{ appointment.get_status_display }}
+                    </span>
+                </div>
             </div>
 
             {% if appointment.doctor_summary %}
-                <div class="mt-6 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
-                    <strong>Visit Summary:</strong>
+                <div class="mt-6 rounded-lg bg-white/10 p-4 text-sm text-slate-300">
+                    <strong class="text-white">Visit Summary:</strong>
                     <p class="mt-1">{{ appointment.doctor_summary }}</p>
                 </div>
             {% endif %}
 
             {% if request.user.user_type == 'doctor' %}
-                <div class="mt-8 border-t border-slate-100 pt-6">
-                    <div class="flex items-end justify-between">
-                        <h2 class="mb-4 text-lg font-bold text-black">Patient's Test Results</h2>
+                <div class="mt-8 border-t border-white/10 pt-6">
+                    <div class="flex flex-wrap items-end justify-between gap-3">
+                        <h2 class="mb-4 text-lg font-bold text-white">Patient's Test Results</h2>
                         <form method="get" class="mb-4 flex items-end gap-3">
                             <div>
-                                <label class="mb-1 block text-sm font-medium text-slate-700">Test Type</label>
+                                <label class="mb-1 block text-sm font-medium text-slate-300">Test Type</label>
                                 <select name="test_type"
                                         onchange="this.form.submit()"
-                                        class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                                        class="block w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-900/50">
                                     <option value="">All Tests</option>
                                     {% for value, label in test_categories %}
                                         <option value="{{ value }}" {% if selected_test_type == value %}selected{% endif %}>
@@ -68,7 +68,7 @@
                         <div class="space-y-3">
                             {% for test in patient_tests %}
                                 <a href="{% url 'medical_tests:medical_test_download_doctor' pk=test.pk %}"
-                                   class="group block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                                   class="group block rounded-2xl border border-white/10 bg-white/10 p-4 shadow-sm transition hover:-translate-y-0.5 hover:bg-white/20">
                                     <div class="flex items-center gap-3">
                                         <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent">
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 text-primary">
@@ -76,31 +76,32 @@
                                             </svg>
                                         </div>
                                         <div class="min-w-0">
-                                            <p class="font-bold text-black group-hover:text-primary">{{ test.name|default:test.get_category_display }}</p>
+                                            <p class="font-bold text-white group-hover:text-primary">{{ test.name|default:test.get_category_display }}</p>
                                             <p class="text-sm text-primary">{{ test.get_category_display }}</p>
-                                            <p class="text-xs text-slate-500">{{ test.uploaded_at|date:"Y/m/d H:i" }}</p>
+                                            <p class="text-xs text-slate-400">{{ test.uploaded_at|date:"Y/m/d H:i" }}</p>
                                         </div>
                                     </div>
                                 </a>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-sm text-slate-500">The patient hasn't uploaded any test results yet.</p>
+                        <p class="text-sm text-slate-400">The patient hasn't uploaded any test results yet.</p>
                     {% endif %}
                 </div>
 
-                <div class="mt-8 border-t border-slate-100 pt-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-bold text-black">Patient Medications</h2>
-                        <a href="{% url 'medications:doctor_medication_list' appointment.pk %}" class="rounded-lg bg-primary px-4 py-2 text-sm text-white hover:bg-primary/90">
+                <div class="mt-8 border-t border-white/10 pt-6">
+                    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                        <h2 class="text-lg font-bold text-white">Patient Medications</h2>
+                        <a href="{% url 'medications:doctor_medication_list' appointment.pk %}" class="auth-btn">
+                            <span></span><span></span><span></span><span></span>
                             Manage Medications
                         </a>
                     </div>
-                    <p class="text-sm text-slate-500">Add, edit, or remove medications for this patient.</p>
+                    <p class="text-sm text-slate-400">Add, edit, or remove medications for this patient.</p>
                 </div>
 
-                <div class="mt-8 border-t border-slate-100 pt-6">
-                    <h2 class="mb-4 text-lg font-bold text-black">Record Visit Summary</h2>
+                <div class="mt-8 border-t border-white/10 pt-6">
+                    <h2 class="mb-4 text-lg font-bold text-white">Record Visit Summary</h2>
                     <form method="post">
                         {% csrf_token %}
                         {% if form.non_field_errors %}
@@ -112,14 +113,15 @@
                         {% endif %}
                         {% for field in form %}
                             <div class="mb-4">
-                                <label class="mb-1 block text-sm font-medium text-slate-700">{{ field.label }}</label>
+                                <label class="mb-1 block text-sm font-medium text-slate-300">{{ field.label }}</label>
                                 {{ field }}
                                 {% if field.errors %}
-                                    <p class="mt-1 text-xs text-red-600">{{ field.errors|striptags }}</p>
+                                    <p class="mt-1 text-xs text-red-700">{{ field.errors|striptags }}</p>
                                 {% endif %}
                             </div>
                         {% endfor %}
-                        <button type="submit" class="rounded-lg bg-primary px-5 py-2.5 text-white hover:bg-primary/90">
+                        <button type="submit" class="auth-btn">
+                            <span></span><span></span><span></span><span></span>
                             Save & Complete Visit
                         </button>
                     </form>
