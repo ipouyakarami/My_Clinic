@@ -160,6 +160,11 @@ class ActivateAccountView(FormView):
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "accounts/dashboard.html"
 
+    def get_template_names(self):
+        if self.request.user.user_type == User.UserType.DOCTOR:
+            return ["accounts/doctor_dashboard.html"]
+        return [self.template_name]
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user

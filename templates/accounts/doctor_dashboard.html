@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Dashboard — MyClinic{% endblock %}
+
+{% block content %}
+    <h1 class="mb-6 text-2xl font-bold text-slate-900">Doctor Dashboard — Dr. {{ user.get_full_name }}</h1>
+
+    <div class="mb-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="service-box flex flex-col gap-3">
+            <span class="text-sm text-slate-400">Today's Appointments</span>
+            <span class="text-2xl font-bold text-white">{{ today_total }}</span>
+        </div>
+        <div class="service-box flex flex-col gap-3">
+            <span class="text-sm text-slate-400">Completed Today</span>
+            <span class="text-2xl font-bold text-white">{{ today_completed }}</span>
+        </div>
+        <div class="service-box flex flex-col gap-3">
+            <span class="text-sm text-slate-400">Upcoming Appointments</span>
+            <span class="text-2xl font-bold text-white">{{ upcoming_count }}</span>
+        </div>
+        <div class="service-box flex flex-col gap-3">
+            <span class="text-sm text-slate-400">Patients Seen</span>
+            <span class="text-2xl font-bold text-white">{{ patients_seen }}</span>
+        </div>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <a href="{% url 'appointments:doctor_today_appointments' %}"
+           class="service-box group flex flex-col gap-4">
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-white transition group-hover:bg-white/20">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </span>
+            <span>
+                <span class="block font-semibold text-white">Today's Appointments</span>
+                <span class="mt-1 block text-sm text-slate-400">Your schedule for today</span>
+            </span>
+        </a>
+
+        <a href="{% url 'appointments:doctor_appointment_list' %}"
+           class="service-box group flex flex-col gap-4">
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-white transition group-hover:bg-white/20">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 10h.01M12 16h.01M15 14v.01M9 14v.01M12 11h.01"/>
+                </svg>
+            </span>
+            <span>
+                <span class="block font-semibold text-white">My Appointments</span>
+                <span class="mt-1 block text-sm text-slate-400">Review and manage all your visits</span>
+            </span>
+        </a>
+
+        <a href="{% url 'appointments:working_hours_create' %}"
+           class="service-box group flex flex-col gap-4">
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-white transition group-hover:bg-white/20">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </span>
+            <span>
+                <span class="block font-semibold text-white">Working Hours</span>
+                <span class="mt-1 block text-sm text-slate-400">Set your weekly availability</span>
+            </span>
+        </a>
+
+        <a href="{% url 'accounts:doctor_profile' %}"
+           class="service-box group flex flex-col gap-4">
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10 text-white transition group-hover:bg-white/20">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+            </span>
+            <span>
+                <span class="block font-semibold text-white">Doctor Profile</span>
+                <span class="mt-1 block text-sm text-slate-400">Update your professional details</span>
+            </span>
+        </a>
+    </div>
+{% endblock %}
