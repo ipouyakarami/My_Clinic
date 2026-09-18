@@ -6,24 +6,24 @@
 <div class="mx-auto max-w-2xl">
     <h1 class="mb-6 text-2xl font-bold text-slate-900">Connect Telegram</h1>
 
-    <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-slate-900">Why connect Telegram?</h2>
-        <p class="text-slate-600 mb-4">
+    <div class="service-box mb-6">
+        <h2 class="mb-4 text-lg font-semibold text-white">Why connect Telegram?</h2>
+        <p class="mb-4 text-slate-400">
             When you connect your Telegram account, you'll receive medication reminders
             directly in Telegram — in addition to email reminders. This ensures you never
             miss a dose, even if you don't check email regularly.
         </p>
 
-        <div class="flex items-center gap-4 rounded-xl bg-slate-50 p-4">
+        <div class="flex items-center gap-4 rounded-xl bg-white/10 p-4">
             <div class="shrink-0">
                 <svg class="h-8 w-8 text-sky-500" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.5 10.5h-3.5V7l-4 4 4 4v-3.5h3.5V10.5z"/>
                 </svg>
             </div>
             <div>
-                <p class="font-medium text-slate-900">Bot: @{{ bot_username }}</p>
-                <p class="text-sm text-slate-500">
-                    <a href="{{ bot_link }}" target="_blank" class="text-primary hover:underline">
+                <p class="font-medium text-white">Bot: @{{ bot_username }}</p>
+                <p class="text-sm text-slate-400">
+                    <a href="{{ bot_link }}" target="_blank" class="text-sky-400 hover:underline">
                         Open {{ bot_link }} in Telegram
                     </a>
                 </p>
@@ -32,29 +32,29 @@
     </div>
 
     {% if is_linked %}
-        <div class="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 sm:p-8 mb-6">
+        <div class="service-box mb-6">
             <div class="flex items-center gap-3 mb-4">
-                <svg class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="h-6 w-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M9 12l2 2 4-4m0 0l4-4 4 4m-4-4v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4z"/>
                 </svg>
-                <span class="text-lg font-semibold text-emerald-800">Connected</span>
+                <span class="text-lg font-semibold text-emerald-300">Connected</span>
             </div>
             {% if patient.telegram_username %}
-                <p class="text-slate-700">
-                    Connected to Telegram user: <strong>@{{ patient.telegram_username }}</strong>
+                <p class="text-slate-300">
+                    Connected to Telegram user: <strong class="text-white">@{{ patient.telegram_username }}</strong>
                 </p>
             {% else %}
-                <p class="text-slate-500">Your Telegram account is connected.</p>
+                <p class="text-slate-400">Your Telegram account is connected.</p>
             {% endif %}
-            <p class="text-sm text-slate-500 mt-3">
+            <p class="text-sm text-slate-400 mt-3">
                 You will now receive medication reminders via Telegram in addition to email.
             </p>
         </div>
 
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
-            <h3 class="mb-4 text-lg font-semibold text-slate-900">Disconnect Telegram</h3>
-            <p class="text-slate-600 mb-4">
+        <div class="service-box">
+            <h3 class="mb-4 text-lg font-semibold text-white">Disconnect Telegram</h3>
+            <p class="mb-4 text-slate-400">
                 If you want to stop receiving Telegram reminders or switch to a different Telegram account,
                 you can disconnect here.
             </p>
@@ -67,15 +67,15 @@
             </form>
         </div>
     {% else %}
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
-            <h2 class="mb-4 text-lg font-semibold text-slate-900">Connect Your Account</h2>
-            <p class="text-slate-600 mb-4">
-                1. Open the MyClinic bot in Telegram: <strong>@{{ bot_username }}</strong>
+        <div class="service-box">
+            <h2 class="mb-4 text-lg font-semibold text-white">Connect Your Account</h2>
+            <p class="mb-4 text-slate-400">
+                1. Open the MyClinic bot in Telegram: <strong class="text-white">@{{ bot_username }}</strong>
             </p>
-            <p class="text-slate-600 mb-4">
-                2. Send <code>/start</code> to the bot to get an activation code.
+            <p class="mb-4 text-slate-400">
+                2. Send <code class="text-sky-400">/start</code> to the bot to get an activation code.
             </p>
-            <p class="text-slate-600 mb-6">
+            <p class="mb-6 text-slate-400">
                 3. Enter the code below and submit to link your accounts.
             </p>
 
@@ -84,13 +84,10 @@
                 <div class="mb-4">
                     {{ form.activation_code }}
                     {% if form.activation_code.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.activation_code.errors.as_text|striptags }}</p>
+                        <p class="mt-1 text-sm text-red-400">{{ form.activation_code.errors.as_text|striptags }}</p>
                     {% endif %}
                 </div>
-                <button type="submit"
-                        class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90">
-                    Connect Telegram
-                </button>
+                <button type="submit" class="auth-btn"><span></span><span></span><span></span><span></span>Connect Telegram</button>
             </form>
         </div>
     {% endif %}

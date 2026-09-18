@@ -10,44 +10,44 @@
             <div class="space-y-4">
                 {% for appointment in appointments %}
                     <a href="{% url 'appointments:appointment_detail' pk=appointment.pk %}"
-                       class="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                       class="service-box group block p-5">
                         <div class="flex items-center gap-4">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
+                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold text-white">
                                 {{ appointment.time_slot.doctor.user.first_name|slice:":1"|default:"D" }}
                             </div>
                             <div class="min-w-0">
-                                <h2 class="truncate font-bold text-black group-hover:text-primary">Dr. {{ appointment.time_slot.doctor.user.get_full_name }}</h2>
-                                <p class="mt-1 text-sm text-primary">{{ appointment.time_slot.doctor.specialty }}</p>
+                                <h2 class="truncate font-bold text-white">Dr. {{ appointment.time_slot.doctor.user.get_full_name }}</h2>
+                                <p class="mt-1 text-sm text-slate-400">{{ appointment.time_slot.doctor.specialty }}</p>
                             </div>
                         </div>
                         <div class="mt-4 grid gap-2 text-sm">
-                            <p class="text-slate-600">
-                                <span class="font-medium text-slate-500">Date:</span>
+                            <p class="text-slate-300">
+                                <span class="font-medium text-slate-400">Date:</span>
                                 {{ appointment.time_slot.date|date:"Y/m/d" }} — {{ appointment.time_slot.start_time|time:"H:i" }} to {{ appointment.time_slot.end_time|time:"H:i" }}
                             </p>
                             <span class="inline-block w-max rounded-full px-3 py-1 text-xs font-medium
-                                {% if appointment.status == 'active' %}bg-accent text-primary{% endif %}
-                                {% if appointment.status == 'completed' %}bg-emerald-50 text-emerald-700{% endif %}
-                                {% if appointment.status == 'cancelled' %}bg-red-50 text-red-700{% endif %}
+                                {% if appointment.status == 'active' %}bg-sky-100 text-sky-800{% endif %}
+                                {% if appointment.status == 'completed' %}bg-emerald-100 text-emerald-800{% endif %}
+                                {% if appointment.status == 'cancelled' %}bg-red-100 text-red-700{% endif %}
                             ">
                                 {{ appointment.get_status_display }}
                             </span>
                         </div>
                         {% if appointment.doctor_summary %}
-                            <div class="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
-                                <strong>Visit Summary:</strong>
+                            <div class="mt-4 rounded-lg bg-white/10 p-4 text-sm text-slate-300">
+                                <strong class="text-white">Visit Summary:</strong>
                                 <p class="mt-1">{{ appointment.doctor_summary }}</p>
                             </div>
                         {% endif %}
                         <div class="mt-4 flex gap-2">
                             {% if appointment.status == 'active' %}
                                 <a href="{% url 'appointments:appointment_cancel' pk=appointment.pk %}"
-                                   class="inline-flex items-center justify-center rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-700 shadow-sm ring-1 ring-red-200">
+                                   class="inline-flex items-center justify-center rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600">
                                     Cancel Appointment
                                 </a>
                             {% endif %}
                             <a href="{% url 'core:doctor_detail' pk=appointment.time_slot.doctor.pk %}"
-                               class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                               class="rounded-lg border border-white/30 px-4 py-2 text-sm text-white transition hover:bg-white/10">
                                 View Doctor
                             </a>
                         </div>
@@ -55,11 +55,9 @@
                 {% endfor %}
             </div>
         {% else %}
-            <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-                <p class="text-slate-500">You haven't booked any appointments yet.</p>
-                <a href="{% url 'core:doctor_list' %}" class="mt-4 inline-block rounded-lg bg-primary px-5 py-2.5 text-sm text-white hover:bg-primary/90">
-                    View Doctors
-                </a>
+            <div class="service-box p-8 text-center">
+                <p class="text-slate-400">You haven't booked any appointments yet.</p>
+                <a href="{% url 'core:doctor_list' %}" class="auth-btn mt-4"><span></span><span></span><span></span><span></span>View Doctors</a>
             </div>
         {% endif %}
     </div>
