@@ -7,10 +7,9 @@
         <h1 class="mb-6 text-2xl font-bold text-black">My Appointments</h1>
 
         {% if appointments %}
-            <div class="space-y-4">
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {% for appointment in appointments %}
-                    <a href="{% url 'appointments:appointment_detail' pk=appointment.pk %}"
-                       class="service-box group block p-5">
+                    <div class="service-box group block h-full p-5">
                         <div class="flex items-center gap-4">
                             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold text-white">
                                 {{ appointment.time_slot.doctor.user.first_name|slice:":1"|default:"D" }}
@@ -34,31 +33,89 @@
                             </span>
                         </div>
                         {% if appointment.doctor_summary %}
-                            <div class="mt-4 rounded-lg bg-white/10 p-4 text-sm text-slate-300">
-                                <strong class="text-white">Visit Summary:</strong>
-                                <p class="mt-1">{{ appointment.doctor_summary }}</p>
-                            </div>
+                            <button type="button" data-summary-open="{{ appointment.pk }}"
+                                    class="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-white/30 px-4 py-2 text-sm text-white transition hover:bg-white/10">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                See Visit Summary
+                            </button>
                         {% endif %}
-                        <div class="mt-4 flex gap-2">
+                        <div class="mt-4 flex flex-col gap-2">
                             {% if appointment.status == 'active' %}
                                 <a href="{% url 'appointments:appointment_cancel' pk=appointment.pk %}"
-                                   class="inline-flex items-center justify-center rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600">
+                                   class="inline-flex w-full items-center justify-center rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600">
                                     Cancel Appointment
                                 </a>
                             {% endif %}
                             <a href="{% url 'core:doctor_detail' pk=appointment.time_slot.doctor.pk %}"
-                               class="rounded-lg border border-white/30 px-4 py-2 text-sm text-white transition hover:bg-white/10">
+                               class="flex w-full items-center justify-center rounded-lg border border-white/30 px-4 py-2 text-sm text-white transition hover:bg-white/10">
                                 View Doctor
                             </a>
                         </div>
-                    </a>
+                    </div>
                 {% endfor %}
             </div>
         {% else %}
-            <div class="service-box p-8 text-center">
+            <div class="service-box col-span-full p-8 text-center">
                 <p class="text-slate-400">You haven't booked any appointments yet.</p>
                 <a href="{% url 'core:doctor_list' %}" class="auth-btn mt-4"><span></span><span></span><span></span><span></span>View Doctors</a>
             </div>
         {% endif %}
     </div>
+
+    {% for appointment in appointments %}
+        {% if appointment.doctor_summary %}
+            <div id="summary-{{ appointment.pk }}" class="hidden fixed inset-0 z-[80] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+                <div class="absolute inset-0 bg-black/60" data-summary-close="{{ appointment.pk }}"></div>
+                <div class="service-box relative w-full max-w-lg p-6">
+                    <div class="mb-3 flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-white">Visit Summary</h3>
+                        <button type="button" data-summary-close="{{ appointment.pk }}" aria-label="Close"
+                                class="rounded-lg p-1 text-white transition hover:bg-white/10">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-slate-300">{{ appointment.doctor_summary }}</p>
+                    <div class="mt-5 flex justify-end">
+                        <button type="button" data-summary-close="{{ appointment.pk }}"
+                                class="rounded-lg border border-white/30 px-4 py-2 text-sm text-white transition hover:bg-white/10">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    document.querySelectorAll("[data-summary-open]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            var modal = document.getElementById("summary-" + this.dataset.summaryOpen);
+            if (modal) modal.classList.remove("hidden");
+        });
+    });
+
+    document.querySelectorAll("[data-summary-close]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            var modal = document.getElementById("summary-" + this.dataset.summaryClose);
+            if (modal) modal.classList.add("hidden");
+        });
+    });
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+            document.querySelectorAll("[id^='summary-']").forEach(function (modal) {
+                modal.classList.add("hidden");
+            });
+        }
+    });
+})();
+</script>
+{% endblock extra_js %}
