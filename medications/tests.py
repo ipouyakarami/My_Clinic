@@ -418,6 +418,60 @@ class InventoryAndRefillTests(TestCase):
         self.assertTrue(medication.refill_reminder_sent)
         self.assertEqual(EmailFailureLog.objects.count(), 0)
 
+    def test_refill_reminder_sent_via_telegram_for_linked_patient(self):
+        """Linked patients must get the refill reminder as a Telegram message
+        (and not an email) when inventory crosses the threshold."""
+        from unittest.mock import patch
+        from django.core import mail
+
+        user = User.objects.create_user(
+            email="pat@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            first_name="مریم",
+            last_name="صادقی",
+            is_active=True,
+        )
+        patient = Patient.objects.create(
+            user=user, phone_number="09121234567", telegram_chat_id="555666", telegram_username="reminder_user"
+        )
+        medication = Medication.objects.create(
+            patient=patient,
+            name="Ibuprofen",
+            unit="قرص",
+            current_inventory=6,
+            refill_reminder_threshold=5,
+            refill_reminder_sent=False,
+        )
+        schedule = MedicationSchedule.objects.create(
+            medication=medication,
+            frequency_type=MedicationSchedule.FrequencyType.DAILY,
+            medication_times=["08:00"],
+            start_date=timezone.now().date(),
+            end_date=timezone.now().date(),
+        )
+        from .views import _generate_intakes_for_schedule
+        _generate_intakes_for_schedule(schedule)
+        intakes = list(MedicationIntake.objects.filter(medication=medication))
+
+        from .tasks import handle_intake_taken
+        with patch("medications.tasks.send_telegram_message", return_value=True) as mock_send_telegram:
+            for intake in intakes:
+                handle_intake_taken(intake.pk)
+
+        medication.refresh_from_db()
+        self.assertTrue(medication.refill_reminder_sent)
+
+        mock_send_telegram.assert_called_once()
+        self.assertEqual(mock_send_telegram.call_args[0][0], "555666")
+        message_text = mock_send_telegram.call_args[0][1]
+        self.assertIn("Refill Reminder", message_text)
+        self.assertIn("Ibuprofen", message_text)
+        self.assertIn("Remaining: 5", message_text)
+
+        self.assertEqual(len(mail.outbox), 0, "Linked patients must not get a refill email")
+        self.assertEqual(EmailFailureLog.objects.count(), 0)
+
     def test_refill_reminder_resets_after_inventory_edited(self):
         user = User.objects.create_user(
             email="pat@example.com",

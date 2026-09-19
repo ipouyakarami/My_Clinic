@@ -57,8 +57,6 @@ class AppointmentDoctorRequiredMixin(DoctorRequiredMixin):
 
 
 def _generate_intakes_for_schedule(schedule, horizon_days=7):
-    from .tasks import send_refill_reminder_email
-
     now = timezone.now()
     tz = timezone.get_current_timezone()
     today = timezone.localdate()

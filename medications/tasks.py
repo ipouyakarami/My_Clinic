@@ -89,6 +89,25 @@ def build_telegram_message(patient_name, intakes, scheduled_time_str, date_str, 
     return "\n".join(lines)
 
 
+def build_refill_telegram_message(patient_name, medication, remaining, site_url):
+    """Build the text message for a Telegram refill reminder."""
+    dosage = medication.dosage or "—"
+    lines = [
+        "🛒 Refill Reminder — MyClinic",
+        "",
+        f"Hello {patient_name}, your medication stock is running low.",
+        "Please refill it as soon as possible.",
+        "",
+        f"• <b>{medication.name}</b> — {dosage}",
+        f"Remaining: {remaining} {medication.unit}",
+        "",
+        f"Log in to {site_url} to update your medication.",
+        "",
+        "MyClinic — Doctor appointment booking & medication tracking",
+    ]
+    return "\n".join(lines)
+
+
 @shared_task
 def send_reminder_emails():
     now = timezone.now()
@@ -176,20 +195,42 @@ def handle_intake_taken(intake_id):
 
     if medication.refill_reminder_threshold is not None:
         if medication.current_inventory <= medication.refill_reminder_threshold and not medication.refill_reminder_sent:
-            send_refill_reminder_email(medication)
+            send_refill_reminder(medication)
             medication.refill_reminder_sent = True
             medication.save(update_fields=["refill_reminder_sent"])
 
 
-def send_refill_reminder_email(medication):
+def send_refill_reminder(medication):
+    """Send a refill reminder via the patient's preferred channel.
+
+    Linked patients get a Telegram message (no email); unlinked patients
+    get email — mirroring the intake-reminder channel logic.
+    """
+    patient = medication.patient
+    if patient.telegram_chat_id:
+        text = build_refill_telegram_message(
+            patient.user.get_full_name(),
+            medication,
+            medication.display_inventory,
+            settings.SITE_URL,
+        )
+        sent = send_telegram_message(patient.telegram_chat_id, text)
+        if not sent:
+            logger.error(
+                "Telegram refill reminder failed for patient %s (chat %s)",
+                patient.user.email,
+                patient.telegram_chat_id,
+            )
+        return sent
+
     try:
         html_body = render_to_string("emails/refill_reminder.html", {
-            "patient": medication.patient.user.get_full_name(),
+            "patient": patient.user.get_full_name(),
             "medication": medication,
             "remaining": medication.display_inventory,
         })
         text_body = render_to_string("emails/refill_reminder.txt", {
-            "patient": medication.patient.user.get_full_name(),
+            "patient": patient.user.get_full_name(),
             "medication": medication,
             "remaining": medication.display_inventory,
         })
@@ -197,10 +238,11 @@ def send_refill_reminder_email(medication):
             "Time to Refill Your Medication — MyClinic",
             text_body,
             None,
-            [medication.patient.user.email],
+            [patient.user.email],
             html_message=html_body,
             fail_silently=False,
         )
+        return True
     except Exception as exc:
         logger.error("Failed to send refill reminder for medication %s: %s", medication.pk, exc)
         EmailFailureLog.objects.create(
@@ -208,3 +250,4 @@ def send_refill_reminder_email(medication):
             error_message=f"Refill reminder failed: {str(exc)[:1000]}",
             medication=medication,
         )
+        return False
