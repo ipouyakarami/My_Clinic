@@ -1110,6 +1110,60 @@ class MedicationViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Edit Medication")
 
+    def test_edit_targets_selected_medication_after_stale_session(self):
+        """Bug regression: editing medication B after a previous wizard session
+        (e.g. an earlier edit of medication A) must update B, not A."""
+        user = User.objects.create_user(
+            email="pat@example.com",
+            password=STRONG_PASSWORD,
+            user_type=User.UserType.PATIENT,
+            first_name="مریم",
+            last_name="صادقی",
+            is_active=True,
+        )
+        patient = Patient.objects.create(user=user, phone_number="09121234567")
+        med_a = Medication.objects.create(patient=patient, name="First", unit="tablet")
+        med_b = Medication.objects.create(patient=patient, name="Second", unit="tablet")
+
+        self.client.force_login(user)
+        self.client.get(reverse("medications:medication_edit", args=[med_a.pk]))
+        self.client.get(reverse("medications:medication_edit", args=[med_b.pk]))
+
+        self.assertEqual(
+            self.client.session[f"medication_wizard_{user.id}"]["medication_pk"],
+            med_b.pk,
+            "Session must rebind to the medication being edited",
+        )
+
+        self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "1", "name": "Second-Renamed", "unit": "tablet"},
+        )
+        self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "2", "frequency_type": "daily"},
+        )
+        self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "3", "frequency_type": "daily", "medication_times": "08:00",
+             "start_date": timezone.localdate().strftime("%Y/%m/%d")},
+        )
+        self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "4", "dosage": "1"},
+        )
+        self.client.post(
+            reverse("medications:medication_add"),
+            {"step": "5", "current_inventory": 10, "refill_reminder_threshold": 5},
+        )
+        self.client.post(reverse("medications:medication_add"), {"step": "6"})
+
+        med_a.refresh_from_db()
+        med_b.refresh_from_db()
+        self.assertEqual(med_a.name, "First")
+        self.assertEqual(med_b.name, "Second-Renamed")
+        self.assertNotEqual(med_a.name, med_b.name)
+
     def test_step1_visible_on_fresh_load(self):
         """Bug 1 regression: step 1 inputs must be visible on fresh page load without clicking Next."""
         user = User.objects.create_user(

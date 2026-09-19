@@ -342,7 +342,7 @@ class MedicationWizardView(PatientRequiredMixin, View):
         if pk:
             medication = self._get_medication(patient, pk)
             schedule = medication.schedules.first()
-            if not session_data:
+            if not session_data or session_data.get("medication_pk") != pk:
                 session_data = {
                     "medication_pk": medication.pk,
                     "name": medication.name,
