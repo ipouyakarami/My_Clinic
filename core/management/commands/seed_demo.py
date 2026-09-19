@@ -171,9 +171,13 @@ class Command(BaseCommand):
         },
     ]
 
-    # -- Working hours: 09:00-13:00 -> 8 slots/day per doctor --------------
+    # -- Working hours: 09:00-13:00 -> 8 slots/day per doctor ---------------
+    # Today is special-cased to 18:00-23:00 so seeded patients can book
+    # today's evening hours and doctors see "today" appointments.
     WORK_START = datetime.time(9, 0)
     WORK_END = datetime.time(13, 0)
+    TODAY_WORK_START = datetime.time(18, 0)
+    TODAY_WORK_END = datetime.time(23, 0)
     SLOT_DAYS_AHEAD = 4  # today + next 3 days
 
     def handle(self, *args, **options):
@@ -248,8 +252,12 @@ class Command(BaseCommand):
         total_created = 0
         for day_offset in range(self.SLOT_DAYS_AHEAD):
             slot_date = today + datetime.timedelta(days=day_offset)
+            if day_offset == 0:
+                start_time, end_time = self.TODAY_WORK_START, self.TODAY_WORK_END
+            else:
+                start_time, end_time = self.WORK_START, self.WORK_END
             created, dropped = generate_time_slots(
-                doctor, slot_date, self.WORK_START, self.WORK_END
+                doctor, slot_date, start_time, end_time
             )
             total_created += len(created)
         self.stdout.write(
@@ -329,13 +337,12 @@ class Command(BaseCommand):
     # -- Appointments -----------------------------------------------------
 
     def _book_appointments(self, patients, doctors):
-        """Book one upcoming, non-overlapping slot per patient (round-robin
-        across doctors). Skips gracefully if no slot is available.
+        """Book one upcoming slot per patient (round-robin across doctors),
+        preferring today's still-available evening slots so "today"
+        appointments appear on doctor dashboards. Skips gracefully if no
+        slot is available.
         """
-        today = timezone.now().date()
-        # Start from tomorrow so booked appointments are always in the future
-        # and clearly appear on dashboards as "upcoming".
-        min_date = today + datetime.timedelta(days=1)
+        now = timezone.localtime(timezone.now())
 
         bookings = []
         for index, patient in enumerate(patients):
@@ -344,12 +351,22 @@ class Command(BaseCommand):
                 TimeSlot.objects.filter(
                     doctor=doctor,
                     is_booked=False,
-                    date__gte=min_date,
+                    date=now.date(),
+                    start_time__gt=now.time(),
                 )
-                .order_by("date", "start_time")
+                .order_by("start_time")
                 .first()
             )
             if slot is None:
+                slot = (
+                    TimeSlot.objects.filter(
+                        doctor=doctor,
+                        is_booked=False,
+                        date__gt=now.date(),
+                    )
+                    .order_by("date", "start_time")
+                    .first()
+                )
                 self.stdout.write(
                     self.style.WARNING(
                         f"  No available slot for {patient.user.get_short_name()} "
