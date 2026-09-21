@@ -1,4 +1,5 @@
 import os
+import re
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -55,3 +56,11 @@ class MedicalTestResultForm(forms.ModelForm):
     def clean_pdf_file(self):
         validate_pdf_file(self.cleaned_data.get("pdf_file"))
         return self.cleaned_data["pdf_file"]
+
+    def clean_name(self):
+        name = self.cleaned_data.get("name", "")
+        if name and not re.fullmatch(r"[\x20-\x7E]*", name):
+            raise ValidationError(
+                _("Test name must use English letters and numbers only (e.g. CBC, Thyroid panel).")
+            )
+        return name

@@ -136,3 +136,34 @@ class NameFieldTests(MedicalTestCase):
         response = self.client.get(reverse("medical_tests:medical_test_list"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Blood Test")
+
+
+class TestNameEnglishOnlyValidation(MedicalTestCase):
+    def _pdf(self):
+        import io
+
+        from django.core.files.uploadedfile import InMemoryUploadedFile
+
+        content = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n"
+        f = io.BytesIO(content)
+        return InMemoryUploadedFile(f, None, "test.pdf", "application/pdf", len(content), None)
+
+    def _form(self, name):
+        return MedicalTestResultForm(
+            data={"category": "blood", "name": name},
+            files={"pdf_file": self._pdf()},
+        )
+
+    def test_non_english_test_name_rejected(self):
+        form = self._form("دارو تقریبا کامل")
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertIn("English", str(form.errors["name"]))
+
+    def test_english_test_name_accepted(self):
+        form = self._form("CBC 2024 - Thyroid panel (2)")
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_blank_test_name_accepted(self):
+        form = self._form("")
+        self.assertTrue(form.is_valid(), form.errors)
