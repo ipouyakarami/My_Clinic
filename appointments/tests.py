@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from accounts.models import Doctor, Patient, User
 from appointments.models import Appointment, TimeSlot
-from appointments.services import SlotAlreadyBooked, book_appointment
+from appointments.services import SlotAlreadyBooked, SlotTooSoon, book_appointment
 from medical_tests.models import MedicalTestResult
 
 
@@ -214,6 +214,55 @@ class BookingTests(AppointmentTestCase):
 
         slot.refresh_from_db()
         self.assertTrue(slot.is_booked)
+
+    def test_patient_cannot_book_slot_within_one_hour(self):
+        doc_user, doctor = self._create_doctor()
+        pat_user, patient = self._create_patient()
+        start = timezone.localtime() + datetime.timedelta(minutes=30)
+        slot = self._create_slot(
+            doctor,
+            date=start.date(),
+            start=start.strftime("%H:%M"),
+            end=(start + datetime.timedelta(minutes=30)).strftime("%H:%M"),
+        )
+        with self.assertRaises(SlotTooSoon):
+            book_appointment(slot, patient)
+        self.assertFalse(Appointment.objects.exists())
+        slot.refresh_from_db()
+        self.assertFalse(slot.is_booked)
+
+    def test_patient_can_book_slot_with_at_least_one_hour(self):
+        doc_user, doctor = self._create_doctor()
+        pat_user, patient = self._create_patient()
+        start = timezone.localtime() + datetime.timedelta(hours=2)
+        slot = self._create_slot(
+            doctor,
+            date=start.date(),
+            start=start.strftime("%H:%M"),
+            end=(start + datetime.timedelta(minutes=30)).strftime("%H:%M"),
+        )
+        appointment = book_appointment(slot, patient)
+        self.assertEqual(Appointment.objects.count(), 1)
+        self.assertEqual(appointment.patient, patient)
+
+    def test_view_rejects_slot_within_one_hour(self):
+        doc_user, doctor = self._create_doctor()
+        pat_user, patient = self._create_patient()
+        start = timezone.localtime() + datetime.timedelta(minutes=30)
+        slot = self._create_slot(
+            doctor,
+            date=start.date(),
+            start=start.strftime("%H:%M"),
+            end=(start + datetime.timedelta(minutes=30)).strftime("%H:%M"),
+        )
+        self._login(pat_user)
+        response = self.client.post(
+            reverse("appointments:book_appointment", args=[doctor.pk]) + f"?slot={slot.pk}",
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "less than an hour")
+        self.assertFalse(Appointment.objects.exists())
 
 
 class CancelAppointmentTests(AppointmentTestCase):

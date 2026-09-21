@@ -15,7 +15,7 @@ from medical_tests.models import MedicalTestResult
 
 from .forms import GregorianDateField, VisitSummaryForm, WorkingHoursForm
 from .models import Appointment, TimeSlot
-from .services import book_appointment, generate_time_slots, SlotAlreadyBooked
+from .services import book_appointment, generate_time_slots, SlotAlreadyBooked, SlotTooSoon
 
 
 class DoctorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -157,6 +157,12 @@ class BookAppointmentView(PatientRequiredMixin, FormView):
             appointment = book_appointment(slot, patient)
         except SlotAlreadyBooked:
             messages.error(self.request, "This slot has just been booked. Please choose another.")
+            return redirect("core:doctor_detail", pk=slot.doctor.pk)
+        except SlotTooSoon:
+            messages.error(
+                self.request,
+                "This slot starts in less than an hour and can no longer be booked. Please choose an earlier slot.",
+            )
             return redirect("core:doctor_detail", pk=slot.doctor.pk)
 
         messages.success(self.request, "Your appointment has been booked successfully. A confirmation email has been sent to you.")

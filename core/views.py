@@ -55,11 +55,15 @@ class DoctorDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["available_slots"] = (
+        cutoff = timezone.now() + timezone.timedelta(hours=1)
+        slots = (
             TimeSlot.objects.filter(doctor=self.object, is_booked=False, date__gte=timezone.localdate())
             .order_by("date", "start_time")
             .select_related("doctor", "doctor__user")
         )
+        context["available_slots"] = [
+            slot for slot in slots if slot.start_datetime > cutoff
+        ]
         return context
 
 

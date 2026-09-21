@@ -14,6 +14,10 @@ class SlotAlreadyBooked(Exception):
     pass
 
 
+class SlotTooSoon(Exception):
+    pass
+
+
 def generate_time_slots(doctor, slot_date, start_time, end_time):
     """Generate 30-minute ``TimeSlot`` rows for ``doctor`` on ``slot_date``.
 
@@ -67,10 +71,15 @@ def book_appointment(slot, patient):
     ``patient``, because ``Appointment.time_slot`` is a one-to-one field and
     the two rows cannot coexist for the same slot.
 
+    Raises ``SlotTooSoon`` if less than one hour remains until the slot
+    starts; patients may not book at the last minute.
+
     Returns the ``Appointment`` backing this booking.
     """
     with transaction.atomic():
         locked = TimeSlot.objects.select_for_update().get(pk=slot.pk)
+        if locked.start_datetime - timezone.now() < datetime.timedelta(hours=1):
+            raise SlotTooSoon(locked.pk)
         existing = Appointment.objects.filter(time_slot=locked).first()
         if existing is not None and existing.status != Appointment.Status.CANCELLED:
             raise SlotAlreadyBooked(locked.pk)
