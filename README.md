@@ -1,7 +1,7 @@
 # MyClinic
 
 A web application for booking in-person doctor appointments and managing patient
-medication schedules with email + Telegram reminders.
+medication schedules with Telegram reminders.
 
 **Live site:** https://web-production-f0235.up.railway.app
 
